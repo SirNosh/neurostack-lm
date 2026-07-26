@@ -1,0 +1,31 @@
+{
+  "protocol": "bounded Experiment 1 pilot",
+  "seed": 1729,
+  "backbone": {
+    "id": "Qwen/Qwen2.5-0.5B-Instruct",
+    "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+    "frozen": true,
+    "config_sha256": "18e18afcaccafade98daf13a54092927904649e1dd4eba8299ab717d5d94ff45",
+    "tokenizer_sha256": "c0382117ea329cdf097041132f6d735924b697924d6f6fc3945713e96ce87539"
+  },
+  "dataset": {
+    "name": "bAbI tasks 1-20 v1.2",
+    "archive_url": "https://s3.amazonaws.com/text-datasets/babi_tasks_1-20_v1-2.tar.gz",
+    "archive_sha256": "84f5296ab9a1ad0dc9464e08c491d65cd08830fca3acae9ab86f75e0fb81573c",
+    "language_variant": "en-10k",
+    "tasks": [1, 2, 3, 4, 5],
+    "train_per_task": 240,
+    "test_per_task": 100
+  },
+  "training": {
+    "bootstrap_per_task": 40,
+    "bootstrap_epochs": 2,
+    "sleep_epochs": 2,
+    "old_replay_size": 100,
+    "optimizer": "AdamW",
+    "learning_rate": 0.0002,
+    "gradient_accumulation": 8
+  },
+  "status": "failed Stage 1 acceptance gate; subsequent results are diagnostic"
+}
+
