@@ -137,6 +137,12 @@ class FrozenQwenEncoder:
 
 
 class SpecialistAdapter(nn.Module):
+    """Bottleneck expert used by the sparse top-2 router.
+
+    Algorithmic basis: Shazeer et al. (2017), arXiv:1701.06538. This is a
+    small pilot adaptation, not copied Tensor2Tensor code.
+    """
+
     def __init__(self) -> None:
         super().__init__()
         self.norm = nn.RMSNorm(256)
@@ -148,7 +154,12 @@ class SpecialistAdapter(nn.Module):
 
 
 class NeuroStack(nn.Module):
-    """Reduced pilot implementation of the specified integrated controller."""
+    """Reduced pilot implementation of the specified integrated controller.
+
+    The maintained slots and update gate are a proxy motivated by the PBWM
+    model (O'Reilly & Frank, 2006); workspace competition follows Goyal et al.
+    (2021). See docs/research-basis.md for exact sources and missing behavior.
+    """
 
     def __init__(self, answers: int) -> None:
         super().__init__()
@@ -245,6 +256,12 @@ class GenericAdapter(nn.Module):
 
 
 class EpisodicMemory:
+    """Semi-tabular top-k memory inspired by Neural Episodic Control.
+
+    Pritzel et al. (2017), arXiv:1703.01988. This pilot stores answer values;
+    it does not yet implement the richer entry schema from Experiment 1.
+    """
+
     def __init__(self, capacity: int = 8192, top_k: int = 4) -> None:
         self.capacity = capacity
         self.top_k = top_k
@@ -550,4 +567,3 @@ def run(config: dict) -> dict:
     torch.save(full.state_dict(), output_dir / "neurostack_pilot.pt")
     torch.save(generic.state_dict(), output_dir / "generic_pilot.pt")
     return results
-
