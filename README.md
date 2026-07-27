@@ -6,6 +6,8 @@ NeuroStack-LM tests whether a frozen pretrained language model benefits from an 
 
 The repository currently contains a **bounded, one-seed bAbI pilot**, not the complete confirmatory Experiment 1.
 
+That result is permanently preserved as Git tag `pilot-v0-negative`. Development has moved to [Stage 1R mechanism qualification](STAGE1R.md): the stateful mechanism core and real-Qwen execution smoke test now pass, but dataset qualification and the 18-run matrix have not started.
+
 The pilot failed the preregistered Stage 1 mechanism gate:
 
 - Supporting-fact AUPRC never approached the required 0.80.
@@ -38,6 +40,8 @@ python -m venv --system-site-packages .venv
 
 The exact dataset/model hashes and selection parameters are in [manifest.json](manifest.json). Research provenance and implementation status are in [docs/research-basis.md](docs/research-basis.md).
 
+The fixed Stage 1R run matrix and gates are machine-readable in [configs/stage1r.json](configs/stage1r.json).
+
 ## Scientific guardrails
 
 - Biological names are hypotheses about functional decomposition, not claims of biological fidelity.
@@ -45,4 +49,3 @@ The exact dataset/model hashes and selection parameters are in [manifest.json](m
 - Failed acceptance gates stop confirmatory interpretation.
 - Existing benchmark language is used unchanged; only deterministic formatting and metadata are added.
 - Matched baselines, lesions, multiple seeds, and held-out evaluations are required before a positive claim.
-

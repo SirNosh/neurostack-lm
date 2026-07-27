@@ -1,0 +1,59 @@
+{
+  "status": "mechanism implementation; qualification runs not started",
+  "backbone": {
+    "id": "Qwen/Qwen2.5-0.5B-Instruct",
+    "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+    "frozen": true,
+    "sequence_length": 512,
+    "adapter_layers_one_indexed": [6, 12, 18, 24],
+    "maximum_cognitive_cycles": 3,
+    "precision": "bfloat16"
+  },
+  "systems": {
+    "R0": "parameter-matched generic adapter",
+    "R1": "generic adapter plus ordinary RAG",
+    "R2": "recurrent memory-token model",
+    "R3": "NeuroStack with generic five-dimensional controller",
+    "R4": "NeuroStack without fast plasticity",
+    "R5": "NeuroStack with differentiated controller"
+  },
+  "seeds": [1729, 2718, 3141],
+  "acceptance": {
+    "support_selection": {
+      "pooled_auprc_min": 0.8,
+      "per_task_auprc_min": 0.7
+    },
+    "router": {
+      "expert_mass_min": 0.1,
+      "expert_mass_max": 0.5,
+      "per_family_mass_max": 0.65,
+      "lesion_drop_points_min": 3
+    },
+    "episodic": {
+      "recall_at_4_min": 0.75,
+      "answer_gain_points_min": 3,
+      "incorrect_memory_drop_points_min": 3
+    },
+    "verifier": {
+      "auroc_min": 0.75,
+      "macro_f1_min": 0.65
+    },
+    "fast_plasticity": {
+      "reset_gain_points_min": 5,
+      "da_shuffle_removes_gain_fraction_min": 0.5
+    },
+    "consolidation": {
+      "slow_only_gain_points_min": 3,
+      "ordinary_replay_gain_points_min": 2
+    },
+    "differentiated_modulation": {
+      "functions_required": 3,
+      "per_function_gain_points_min": 2
+    },
+    "integrated": {
+      "max_domain_regression_points": 3,
+      "max_inference_flops_multiple_of_r0": 2
+    }
+  }
+}
+

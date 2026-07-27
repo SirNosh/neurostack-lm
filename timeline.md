@@ -12,3 +12,9 @@
 - User requested periodic publication to `SirNosh/neurostack-lm`; repository was confirmed empty and GitHub authentication is active.
 - Published the complete reproducibility package to GitHub in commit `9ea3e45`, including Git LFS checkpoints, cached frozen features, metrics, and example-level predictions.
 - Research decision: use PBWM, shared global workspace, sparse MoE, Neural Episodic Control/DNC, Backpropamine, PRM process supervision, and complementary learning systems as algorithmic bases. Clearly mark reduced proxies and unimplemented mechanisms instead of relying on anatomical names.
+- Tagged the audited negative pilot as `pilot-v0-negative` and pushed the tag.
+- Implemented the Stage 1R stateful mechanism core and token-level frozen-Qwen adapter hooks.
+- Added 25 deterministic tests (including six integration/lifetime tests); all pass.
+- Ran a real-Qwen two-cycle smoke lifetime: four-slot broadcast, two scoped event writes, retrieval in both sessions, and nonzero rank-8 fast state all executed with the backbone frozen.
+- Added shared-resource coordination under the name `neurostack-lm`; no long training job will start without an active reservation and calibrated duration.
+- Decision: do not start the 18-run qualification matrix until dataset adapters, R0/R1/R2 baselines, and a short resource calibration exist. Execution success is not a qualification result.

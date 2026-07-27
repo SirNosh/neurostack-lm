@@ -1,0 +1,24 @@
+{
+  "backbone_revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+  "backbone_frozen": true,
+  "adapter_layers_one_indexed": [
+    6,
+    12,
+    18,
+    24
+  ],
+  "cognitive_cycles": 2,
+  "workspace_shape": [
+    2,
+    4,
+    256
+  ],
+  "episodic_events_written": 2,
+  "retrieved_events": [
+    1,
+    1
+  ],
+  "fast_pfc_matrix_l1": 0.00299072265625,
+  "peak_vram_gb": 1.035201072692871,
+  "status": "passed"
+}
