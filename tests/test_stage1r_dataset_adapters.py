@@ -1,7 +1,14 @@
 import json
 from pathlib import Path
 
-from src.stage1r.fewrel import build_fewrel_episodes
+import torch
+
+from src.stage1r.fewrel import (
+    FewRelEpisodeFastLearner,
+    build_fewrel_episodes,
+    build_fewrel_v2_episodes,
+    partition_training_relations,
+)
 from src.stage1r.prm800k import parse_prm800k
 
 
@@ -79,3 +86,73 @@ def test_fewrel_five_shot_has_twenty_five_supports_and_five_queries():
     )
     assert len(examples) == 30
     assert sum(bool(example.encode_target) for example in examples) == 25
+
+
+def test_fewrel_v2_support_labels_visible_and_query_labels_hidden():
+    examples = build_fewrel_v2_episodes(
+        _fewrel_relations(), split="test", shot=1, episode_count=1
+    )
+    supports = [item for item in examples if item.encode_target]
+    queries = [item for item in examples if not item.encode_target]
+    assert all(
+        f"Relation label: {item.relation_label}" in item.input_text
+        for item in supports
+    )
+    assert all("Relation label:" not in item.input_text for item in queries)
+    assert all("Choose relation label: A, B, C, D, or E." in item.input_text for item in queries)
+
+
+def test_fewrel_v2_permutation_changes_between_episodes():
+    examples = build_fewrel_v2_episodes(
+        _fewrel_relations(), split="test", shot=1, episode_count=2
+    )
+    episodes = {}
+    for item in examples:
+        if item.encode_target:
+            entity = item.input_text.split("entity-", 1)[1].splitlines()[0]
+            episodes.setdefault(item.session_id, {})[entity] = item.relation_label
+    assert len(episodes) == 2
+    assert list(episodes.values())[0] != list(episodes.values())[1]
+
+
+def test_fewrel_v2_relation_partitions_are_disjoint():
+    train, dev = partition_training_relations(
+        [f"P{index}" for index in range(64)]
+    )
+    test = {f"T{index}" for index in range(16)}
+    assert len(train) == 48
+    assert len(dev) == 16
+    assert not (set(train) & set(dev))
+    assert not ((set(train) | set(dev)) & test)
+
+
+def test_fewrel_v2_fast_update_uses_episode_label_embedding():
+    learner = FewRelEpisodeFastLearner(representation_dim=8, rank=2)
+    state = learner.initialize(1, device="cpu", dtype=torch.float32)
+    support = torch.randn(1, 8)
+    captured = []
+    handle = learner.fast_weights.value_rank.register_forward_pre_hook(
+        lambda _module, inputs: captured.append(inputs[0].detach().clone())
+    )
+    learner.update_support(state, support, ["C"], da=torch.ones(1))
+    handle.remove()
+    assert torch.equal(captured[0], learner.label_values(["C"]))
+
+
+def test_fewrel_v2_evaluation_updates_only_fast_state():
+    learner = FewRelEpisodeFastLearner(representation_dim=8, rank=2)
+    learner.set_evaluation_mode()
+    parameters = {
+        name: parameter.detach().clone()
+        for name, parameter in learner.named_parameters()
+    }
+    state = learner.initialize(1, device="cpu", dtype=torch.float32)
+    updated = learner.update_support(
+        state, torch.randn(1, 8), ["A"], da=torch.ones(1)
+    )
+    assert updated.u.grad_fn is None
+    assert updated.v.grad_fn is None
+    assert all(
+        torch.equal(parameter, parameters[name])
+        for name, parameter in learner.named_parameters()
+    )

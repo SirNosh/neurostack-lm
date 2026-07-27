@@ -55,7 +55,7 @@ No source code below is copied into this repository. The papers and author-maint
 - Biological hypotheses behind the labels: dopamine as reward-prediction error follows Schultz, Dayan & Montague, [A neural substrate of prediction and reward](https://doi.org/10.1126/science.275.5306.1593) (1997); NE-like adaptive gain follows Aston-Jones & Cohen, [An integrative theory of locus coeruleus-norepinephrine function](https://doi.org/10.1146/annurev.neuro.28.061604.135709) (2005); uncertainty-sensitive ACh follows Yu & Dayan, [Uncertainty, neuromodulation, and attention](https://doi.org/10.1016/j.neuron.2005.04.026) (2005); and the four-way computational factorization is informed by Doya, [Metalearning and neuromodulation](https://doi.org/10.1016/S0893-6080(02)00044-8) (2002).
 - Open-code status: those biological papers did not publish drop-in implementations for this architecture. The actual learned update rule is based on the author-released Backpropamine and differentiable-plasticity code above.
 - Pilot status: **not implemented** in the tagged negative pilot.
-- Stage 1R status: rank-8 local matrices and distinct control paths are implemented and covered by update/reset and control-effect tests. Few-shot learning quality has not yet been measured.
+- Stage 1R status: rank-8 local matrices and distinct control paths are implemented and covered by update/reset and control-effect tests. FewRel v2 explicitly writes support representations as keys and episode-local A-E label embeddings as values. Few-shot learning quality has not yet been measured.
 - Scientific constraint: calling the outputs dopamine-, norepinephrine-, acetylcholine-, serotonin-, or overload-like is a preregistered functional hypothesis. Backpropamine supports learned neuromodulation of plasticity, not this specific five-channel biological factorization.
 
 ## Few-shot fast-learning benchmark
@@ -63,7 +63,7 @@ No source code below is copied into this repository. The papers and author-maint
 - Benchmark basis: Han et al., [FewRel: A Large-Scale Supervised Few-Shot Relation Classification Dataset](https://aclanthology.org/D18-1514/) (2018).
 - Official dataset/code: [THUNLP FewRel](https://github.com/thunlp/FewRel).
 - Stage 1R use: 5-way 1-shot and 5-shot episodes, with held-out relations and no evaluation-time gradient updates.
-- Current status: the official 64 meta-train and 16 held-out FewRel 1.0 relations are frozen into deterministic 5-way 1-shot and 5-shot episodes. No evaluation-time gradient updates are permitted. No fast-plasticity qualification result exists yet.
+- Current status: v1 remains frozen. V2 deterministically partitions the official 64 training relations into 48 meta-train and 16 meta-dev relations and retains the official 16 validation relations as held-out test. Each partition has 1,000 1-shot and 1,000 5-shot episodes with independently permuted episode-local labels A-E, visible support labels, hidden query labels, and instance-disjoint support/query rows. No fast-plasticity qualification result exists yet.
 
 ## Supporting-fact and long-context data
 

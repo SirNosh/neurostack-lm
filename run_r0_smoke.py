@@ -49,8 +49,31 @@ def main() -> None:
         return_tensors="pt",
     ).to("cuda")
     torch.cuda.reset_peak_memory_stats()
-    output = model(tokens.input_ids, tokens.attention_mask, passes=3)
+    one_pass = model(tokens.input_ids, tokens.attention_mask, passes=1)
+    output = model(
+        tokens.input_ids,
+        tokens.attention_mask,
+        passes=3,
+        feedback_enabled=True,
+    )
+    zero_feedback = model(
+        tokens.input_ids,
+        tokens.attention_mask,
+        passes=3,
+        feedback_enabled=False,
+    )
     after = hash_module_parameters(model.backbone)
+    pass_deltas = [
+        float(
+            (output.pass_logits[index] - output.pass_logits[index - 1])
+            .abs()
+            .max()
+        )
+        for index in range(1, len(output.pass_logits))
+    ]
+    zero_feedback_delta = float(
+        (output.token_logits - zero_feedback.token_logits).abs().max()
+    )
     result = {
         "backbone_revision": QWEN_REVISION,
         "backbone_hash_unchanged": before == after,
@@ -60,8 +83,30 @@ def main() -> None:
         "adapter_bottlenecks": [
             adapter.bottleneck for adapter in model.adapters
         ],
+        "feedback_tokens": model.feedback_token_count,
         "backbone_passes": output.backbone_passes,
+        "conditions": {
+            "one_pass": {
+                "backbone_passes": one_pass.backbone_passes,
+            },
+            "three_pass": {
+                "backbone_passes": output.backbone_passes,
+                "successive_logit_max_abs_deltas": pass_deltas,
+            },
+            "zero_feedback": {
+                "backbone_passes": zero_feedback.backbone_passes,
+                "iterative_vs_zero_logit_max_abs_delta": zero_feedback_delta,
+            },
+        },
         "adapter_matmul_flops": model.adapter_matmul_flops(
+            batch_size=1,
+            tokens=tokens.input_ids.shape[1],
+            passes=3,
+        ),
+        "feedback_matmul_flops": model.feedback_matmul_flops(
+            batch_size=1, passes=3
+        ),
+        "total_mechanism_matmul_flops": model.mechanism_matmul_flops(
             batch_size=1,
             tokens=tokens.input_ids.shape[1],
             passes=3,
@@ -72,6 +117,8 @@ def main() -> None:
             if before == after
             and abs(r0_trainable - target) / target <= 0.02
             and output.backbone_passes == 3
+            and all(delta > 0 for delta in pass_deltas)
+            and zero_feedback_delta > 0
             else "failed"
         ),
     }

@@ -32,10 +32,13 @@ def test_r0_matches_r5_trainable_parameters_within_two_percent():
 
 def test_r0_uses_real_token_path_and_up_to_three_passes():
     r0, _ = make_models()
+    r0.eval()
     ids, mask = toy_inputs()
     output = r0(ids, mask, passes=3)
     assert output.backbone_passes == 3
     assert len(output.pass_logits) == 3
+    assert len(output.feedback_tokens) == 2
+    assert not torch.equal(output.pass_summaries[0], output.pass_summaries[1])
     assert output.token_logits.shape == (2, 64)
     with pytest.raises(ValueError):
         r0(ids, mask, passes=4)
@@ -70,9 +73,21 @@ def test_r0_flops_count_all_parameter_matched_adapters():
     expected = (
         4
         * 2
-        * 16
+        * (16 * 3 + 4 * 2)
         * 32
         * sum(adapter.bottleneck for adapter in r0.adapters)
-        * 3
     )
     assert r0.adapter_matmul_flops(batch_size=2, tokens=16, passes=3) == expected
+
+
+def test_r0_feedback_changes_iterative_result():
+    r0, _ = make_models()
+    r0.eval()
+    ids, mask = toy_inputs()
+    iterative = r0(ids, mask, passes=3, feedback_enabled=True)
+    zero_feedback = r0(ids, mask, passes=3, feedback_enabled=False)
+    assert not torch.equal(
+        iterative.pass_summaries[-1], zero_feedback.pass_summaries[-1]
+    )
+    assert all(token.abs().sum() > 0 for token in iterative.feedback_tokens)
+    assert all(token.abs().sum() == 0 for token in zero_feedback.feedback_tokens)

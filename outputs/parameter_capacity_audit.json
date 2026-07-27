@@ -1,0 +1,135 @@
+{
+  "backbone_revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+  "consolidation_control": {
+    "match_error_fraction": 1.0245341784601934e-05,
+    "method": "narrower iterative R0; all non-backbone parameters trainable",
+    "sleep_trainable_parameters": 4685104,
+    "system": "R0 ordinary replay",
+    "target_R5_sleep_trainable_parameters": 4685056
+  },
+  "flop_method": "multiply-adds count as two FLOPs; exact Qwen linear and attention terms, dense four-expert adapter execution, and standardized non-backbone linear/einsum estimate",
+  "memory_method": "tensor payload bytes for online state plus 128 episodic entries (key, value, goal, workspace vectors); Python metadata excluded",
+  "schema_version": "stage1r-capacity-v1",
+  "systems": {
+    "R0": {
+      "active_parameters_per_pass": [
+        502192707,
+        505407555,
+        505407555
+      ],
+      "adapter_mechanism_flops": 25174560768,
+      "development_trainable_parameters": 11374787,
+      "feedback_tokens": 4,
+      "maximum_passes": 3,
+      "memory_bytes": 7168,
+      "parameter_match_error_fraction": 7.40288439938825e-05,
+      "sleep_trainable_parameters": 11374787,
+      "status": "measured",
+      "total_backbone_flops": 1174138355712,
+      "total_parameters": 505407555,
+      "wake_mutable_state_bytes": 7168
+    },
+    "R1": {
+      "active_parameters_per_pass": null,
+      "adapter_mechanism_flops": null,
+      "development_trainable_parameters": null,
+      "maximum_passes": null,
+      "memory_bytes": null,
+      "reason": "ordinary-RAG baseline is not implemented; no measurements invented",
+      "sleep_trainable_parameters": null,
+      "status": "unavailable",
+      "total_backbone_flops": null,
+      "total_parameters": null,
+      "wake_mutable_state_bytes": null
+    },
+    "R2": {
+      "active_parameters_per_pass": null,
+      "adapter_mechanism_flops": null,
+      "development_trainable_parameters": null,
+      "maximum_passes": null,
+      "memory_bytes": null,
+      "reason": "recurrent-memory-token baseline is not implemented; no measurements invented",
+      "sleep_trainable_parameters": null,
+      "status": "unavailable",
+      "total_backbone_flops": null,
+      "total_parameters": null,
+      "wake_mutable_state_bytes": null
+    },
+    "R3": {
+      "active_parameters_per_pass": [
+        505406713,
+        505406713,
+        505406713
+      ],
+      "adapter_mechanism_flops": 11395495784,
+      "controller": "generic five-dimensional",
+      "development_trainable_parameters": 11373945,
+      "maximum_passes": 3,
+      "memory_bytes": 581690,
+      "sleep_trainable_parameters": 4685056,
+      "status": "measured",
+      "total_backbone_flops": 1174138355712,
+      "total_parameters": 505406713,
+      "wake_mutable_state_bytes": 581690
+    },
+    "R3+aux": {
+      "active_parameters_per_pass": [
+        505406713,
+        505406713,
+        505406713
+      ],
+      "adapter_mechanism_flops": 11395495784,
+      "controller": "generic five-dimensional",
+      "development_trainable_parameters": 11373945,
+      "difference_from_R3": "auxiliary supervision objective; no added parameters",
+      "maximum_passes": 3,
+      "memory_bytes": 581690,
+      "sleep_trainable_parameters": 4685056,
+      "status": "measured",
+      "total_backbone_flops": 1174138355712,
+      "total_parameters": 505406713,
+      "wake_mutable_state_bytes": 581690
+    },
+    "R4": {
+      "active_parameters_per_pass": [
+        505381625,
+        505381625,
+        505381625
+      ],
+      "adapter_mechanism_flops": 11395495784,
+      "controller": "differentiated; fast plasticity disabled",
+      "development_trainable_parameters": 11373945,
+      "maximum_passes": 3,
+      "memory_bytes": 531514,
+      "sleep_trainable_parameters": 4685056,
+      "status": "measured",
+      "total_backbone_flops": 1174138355712,
+      "total_parameters": 505406713,
+      "wake_mutable_state_bytes": 531514
+    },
+    "R5": {
+      "active_parameters_per_pass": [
+        505406713,
+        505406713,
+        505406713
+      ],
+      "adapter_mechanism_flops": 11395495784,
+      "controller": "differentiated",
+      "development_trainable_parameters": 11373945,
+      "maximum_passes": 3,
+      "memory_bytes": 581690,
+      "sleep_trainable_parameters": 4685056,
+      "status": "measured",
+      "total_backbone_flops": 1174138355712,
+      "total_parameters": 505406713,
+      "wake_mutable_state_bytes": 581690
+    }
+  },
+  "workload": {
+    "batch_size": 1,
+    "episodic_entries": 128,
+    "passes": 3,
+    "retrieval_breadth": 4,
+    "sequence_length": 512
+  }
+}

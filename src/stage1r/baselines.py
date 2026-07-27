@@ -30,11 +30,13 @@ class GenericAdapter(nn.Module):
 class BaselineOutput:
     token_logits: torch.Tensor
     pass_logits: list[torch.Tensor]
+    pass_summaries: list[torch.Tensor]
+    feedback_tokens: list[torch.Tensor]
     backbone_passes: int
 
 
 class R0ParameterMatchedAdapter(nn.Module):
-    """Parameter-matched generic-adapter baseline on the frozen token path."""
+    """Parameter-matched iterative baseline with generic feedback tokens."""
 
     def __init__(
         self,
@@ -53,10 +55,21 @@ class R0ParameterMatchedAdapter(nn.Module):
         if len(self.backbone.model.layers) <= max(self.adapter_layer_indices):
             raise ValueError("backbone does not expose the required adapter layers")
 
+        self.feedback_token_count = 4
+        self.feedback_projection = nn.Linear(
+            hidden_size, self.feedback_token_count * hidden_size
+        )
+        feedback_parameters = sum(
+            parameter.numel() for parameter in self.feedback_projection.parameters()
+        )
         fixed_per_adapter = 2 * hidden_size
         per_bottleneck = 2 * hidden_size + 1
         total_units = round(
-            (target_trainable_parameters - len(self.adapter_layer_indices) * fixed_per_adapter)
+            (
+                target_trainable_parameters
+                - feedback_parameters
+                - len(self.adapter_layer_indices) * fixed_per_adapter
+            )
             / per_bottleneck
         )
         if total_units < len(self.adapter_layer_indices):
@@ -128,14 +141,31 @@ class R0ParameterMatchedAdapter(nn.Module):
     def adapter_matmul_flops(
         self, *, batch_size: int, tokens: int, passes: int
     ) -> int:
+        processed_tokens = tokens * passes + self.feedback_token_count * (passes - 1)
         return (
             4
             * batch_size
-            * tokens
+            * processed_tokens
             * self.hidden_size
             * sum(adapter.bottleneck for adapter in self.adapters)
-            * passes
         )
+
+    def feedback_matmul_flops(self, *, batch_size: int, passes: int) -> int:
+        return (
+            2
+            * batch_size
+            * self.hidden_size
+            * self.feedback_token_count
+            * self.hidden_size
+            * max(0, passes - 1)
+        )
+
+    def mechanism_matmul_flops(
+        self, *, batch_size: int, tokens: int, passes: int
+    ) -> int:
+        return self.adapter_matmul_flops(
+            batch_size=batch_size, tokens=tokens, passes=passes
+        ) + self.feedback_matmul_flops(batch_size=batch_size, passes=passes)
 
     def forward(
         self,
@@ -143,25 +173,54 @@ class R0ParameterMatchedAdapter(nn.Module):
         attention_mask: torch.Tensor,
         *,
         passes: int = 1,
+        feedback_enabled: bool = True,
     ) -> BaselineOutput:
         if not 1 <= passes <= 3:
             raise ValueError("R0 permits one to three backbone passes")
-        outputs = []
-        for _ in range(passes):
+        outputs: list[torch.Tensor] = []
+        summaries: list[torch.Tensor] = []
+        feedback_tokens: list[torch.Tensor] = []
+        original_embeddings = self.backbone.model.embed_tokens(input_ids)
+        current_embeddings = original_embeddings
+        current_mask = attention_mask
+        for pass_index in range(passes):
             hidden = self.backbone.model(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
+                inputs_embeds=current_embeddings,
+                attention_mask=current_mask,
                 use_cache=False,
                 return_dict=True,
             ).last_hidden_state
             outputs.append(self.backbone.lm_head(hidden[:, -1]))
-        return BaselineOutput(outputs[-1], outputs, passes)
+            mask = current_mask.to(hidden.dtype).unsqueeze(-1)
+            summary = (hidden * mask).sum(1) / mask.sum(1).clamp_min(1)
+            summaries.append(summary)
+            if pass_index + 1 < passes:
+                projected = self.feedback_projection(summary).view(
+                    hidden.shape[0], self.feedback_token_count, self.hidden_size
+                )
+                feedback = projected if feedback_enabled else torch.zeros_like(projected)
+                feedback_tokens.append(feedback)
+                current_embeddings = torch.cat(
+                    (feedback, original_embeddings), dim=1
+                )
+                prefix_mask = torch.ones(
+                    attention_mask.shape[0],
+                    self.feedback_token_count,
+                    device=attention_mask.device,
+                    dtype=attention_mask.dtype,
+                )
+                current_mask = torch.cat((prefix_mask, attention_mask), dim=1)
+        return BaselineOutput(
+            outputs[-1], outputs, summaries, feedback_tokens, passes
+        )
 
     def set_sleep_mode(self) -> None:
         self.train()
         for parameter in self.backbone.parameters():
             parameter.requires_grad_(False)
         for parameter in self.adapters.parameters():
+            parameter.requires_grad_(True)
+        for parameter in self.feedback_projection.parameters():
             parameter.requires_grad_(True)
 
     def set_evaluation_mode(self) -> None:

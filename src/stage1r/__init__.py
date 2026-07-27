@@ -14,6 +14,7 @@ from .mechanisms import (
 )
 from .data import Stage1RExample
 from .baselines import R0ParameterMatchedAdapter
+from .fewrel import FewRelEpisodeFastLearner
 
 __all__ = [
     "CognitiveState",
@@ -28,4 +29,5 @@ __all__ = [
     "Workspace",
     "Stage1RExample",
     "R0ParameterMatchedAdapter",
+    "FewRelEpisodeFastLearner",
 ]

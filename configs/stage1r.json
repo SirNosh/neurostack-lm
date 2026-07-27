@@ -10,14 +10,58 @@
     "precision": "bfloat16"
   },
   "systems": {
-    "R0": "parameter-matched generic adapter",
+    "R0": "parameter-matched iterative generic adapter with four feedback tokens",
     "R1": "generic adapter plus ordinary RAG",
     "R2": "recurrent memory-token model",
     "R3": "NeuroStack with generic five-dimensional controller",
+    "R3+aux": "R3 with supervision for differentiated controller signals",
     "R4": "NeuroStack without fast plasticity",
     "R5": "NeuroStack with differentiated controller"
   },
   "seeds": [1729, 2718, 3141],
+  "run_matrix": [
+    {"system": "R0", "seed": 1729},
+    {"system": "R0", "seed": 2718},
+    {"system": "R0", "seed": 3141},
+    {"system": "R1", "seed": 1729},
+    {"system": "R1", "seed": 2718},
+    {"system": "R1", "seed": 3141},
+    {"system": "R2", "seed": 1729},
+    {"system": "R2", "seed": 2718},
+    {"system": "R2", "seed": 3141},
+    {"system": "R3", "seed": 1729},
+    {"system": "R3", "seed": 2718},
+    {"system": "R3", "seed": 3141},
+    {"system": "R3+aux", "seed": 1729},
+    {"system": "R3+aux", "seed": 2718},
+    {"system": "R3+aux", "seed": 3141},
+    {"system": "R4", "seed": 1729},
+    {"system": "R4", "seed": 2718},
+    {"system": "R4", "seed": 3141},
+    {"system": "R5", "seed": 1729},
+    {"system": "R5", "seed": 2718},
+    {"system": "R5", "seed": 3141}
+  ],
+  "fewrel_v2": {
+    "relation_split": [48, 16, 16],
+    "episode_labels": ["A", "B", "C", "D", "E"],
+    "shots": [1, 5],
+    "episodes_per_shot_per_partition": 1000,
+    "evaluation_gradient_updates": false,
+    "evaluation_conditions": ["full", "fast_reset", "shuffled_da"]
+  },
+  "capacity_audit_workload": {
+    "batch_size": 1,
+    "sequence_length": 512,
+    "passes": 3,
+    "episodic_entries": 128,
+    "retrieval_breadth": 4
+  },
+  "consolidation_control": {
+    "system": "R0",
+    "method": "ordinary replay",
+    "sleep_trainable_capacity_match": "R5 +/-2%"
+  },
   "acceptance": {
     "support_selection": {
       "pooled_auprc_min": 0.8,
@@ -56,4 +100,3 @@
     }
   }
 }
-

@@ -62,6 +62,7 @@ def build_manifest(
     source_revision: str,
     raw_files: Sequence[Path],
     split_procedure: str,
+    adapter_version: str = ADAPTER_VERSION,
 ) -> dict:
     if not raw_files:
         raise ValueError("a frozen manifest requires at least one raw source file")
@@ -95,7 +96,7 @@ def build_manifest(
         "raw_file_sha256": {
             path.name: sha256_file(path) for path in sorted(raw_files)
         },
-        "adapter_version": ADAPTER_VERSION,
+        "adapter_version": adapter_version,
         "split_procedure": split_procedure,
         "selected_row_ids": selected_ids,
         "formatted_example_hashes": formatted_hashes,

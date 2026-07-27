@@ -7,7 +7,10 @@ from pathlib import Path
 from src.stage1r.babi import babi_stage1r_splits
 from src.stage1r.babilong import babilong_stage1r_training_split
 from src.stage1r.data import build_manifest
-from src.stage1r.fewrel import fewrel_stage1r_splits
+from src.stage1r.fewrel import (
+    fewrel_stage1r_splits,
+    fewrel_stage1r_v2_splits,
+)
 from src.stage1r.prm800k import prm800k_stage1r_splits
 
 
@@ -135,6 +138,49 @@ def main() -> None:
             encoding="utf-8",
         )
         print(json.dumps(fewrel_manifest["counts"], sort_keys=True))
+
+        v2_splits, v2_files, v2_partitions = fewrel_stage1r_v2_splits(
+            train_path, heldout_path
+        )
+        v2_manifest = build_manifest(
+            v2_splits,
+            source_url="https://github.com/thunlp/FewRel",
+            source_revision="278a2315d2138810a379cd8d5718914dc56e2582",
+            raw_files=v2_files,
+            split_procedure=(
+                "Order the official 64 train_wiki relation IDs by "
+                "SHA-256('1729:'+relation_id): first 48 meta-train, remaining "
+                "16 meta-dev. Keep all 16 official val_wiki relations as held-out "
+                "test. Freeze 1,000 seeded 5-way episodes for each of 1-shot and "
+                "5-shot in every partition, with instance-disjoint support/query "
+                "items and independently permuted episode-local labels A-E."
+            ),
+            adapter_version="stage1r-v2",
+        )
+        v2_manifest["relation_partitions"] = v2_partitions
+        v2_manifest["episode_protocol"] = {
+            "ways": 5,
+            "shots": [1, 5],
+            "episodes_per_shot_per_partition": 1000,
+            "queries_per_relation": 1,
+            "support_labels_visible": True,
+            "query_labels_hidden": True,
+            "episode_local_labels": ["A", "B", "C", "D", "E"],
+            "label_permutation": "independent_per_episode",
+            "support_query_instance_disjoint": True,
+            "fast_update": {
+                "key": "support_representation",
+                "value": "episode_label_embedding",
+            },
+            "evaluation_gradient_updates": False,
+            "evaluation_conditions": ["full", "fast_reset", "shuffled_da"],
+        }
+        v2_output = args.output.with_name("fewrel_stage1r_v2.json")
+        v2_output.write_text(
+            json.dumps(v2_manifest, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        print(json.dumps(v2_manifest["counts"], sort_keys=True))
 
 
 if __name__ == "__main__":

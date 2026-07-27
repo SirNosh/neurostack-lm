@@ -56,3 +56,53 @@ def hash_module_parameters(module: nn.Module) -> str:
         raw = parameter.detach().cpu().contiguous().view(torch.uint8)
         digest.update(raw.numpy().tobytes())
     return digest.hexdigest()
+
+
+def qwen_backbone_flops(
+    *,
+    sequence_lengths: list[int],
+    batch_size: int,
+    hidden_size: int,
+    intermediate_size: int,
+    layers: int,
+    attention_heads: int,
+    key_value_heads: int,
+    vocabulary_size: int,
+) -> int:
+    """Standardized multiply-add estimate for full causal Qwen passes."""
+    head_dim = hidden_size // attention_heads
+    key_value_dim = key_value_heads * head_dim
+    projection_weights = (
+        2 * hidden_size * hidden_size
+        + 2 * hidden_size * key_value_dim
+        + 3 * hidden_size * intermediate_size
+    )
+    total = 0
+    for tokens in sequence_lengths:
+        linear = 2 * batch_size * tokens * projection_weights
+        attention = (
+            4
+            * batch_size
+            * attention_heads
+            * tokens
+            * tokens
+            * head_dim
+        )
+        lm_head = 2 * batch_size * hidden_size * vocabulary_size
+        total += layers * (linear + attention) + lm_head
+    return total
+
+
+def tensor_payload_bytes(value: object) -> int:
+    if isinstance(value, torch.Tensor):
+        return value.numel() * value.element_size()
+    if hasattr(value, "__dataclass_fields__"):
+        return sum(
+            tensor_payload_bytes(getattr(value, field))
+            for field in value.__dataclass_fields__
+        )
+    if isinstance(value, (list, tuple)):
+        return sum(tensor_payload_bytes(item) for item in value)
+    if isinstance(value, dict):
+        return sum(tensor_payload_bytes(item) for item in value.values())
+    return 0

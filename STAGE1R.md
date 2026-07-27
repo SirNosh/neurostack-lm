@@ -25,11 +25,16 @@ The previous proxy remains preserved at Git tag `pilot-v0-negative`.
 - Lesion switches and wake/sleep parameter permissions.
 - Per-example retrieval breadth and model-controlled evaluation-time episodic writes.
 - Honest dense-expert FLOP accounting.
-- Common `Stage1RExample` schema and frozen bAbI/BABILong manifests.
+- Common `Stage1RExample` schema and frozen bAbI/BABILong/PRM800K/FewRel manifests.
+- FewRel v2 with deterministic 48/16/16 relation partitions, episode-local
+  A-E labels, support-label fast updates, and no evaluation gradients.
+- A 21-run machine-readable matrix covering R0-R5 plus R3+aux.
+- A real-Qwen parameter/capacity audit with an R5 sleep-capacity-matched
+  ordinary-replay R0 control; R1/R2 are explicitly unavailable.
 
 ## Validation completed
 
-- 49 deterministic tests pass.
+- 59 deterministic tests pass.
 - Ten are integration/lifetime tests.
 - A real-Qwen token-level smoke lifetime passed:
 
@@ -66,9 +71,12 @@ The real-Qwen R0 execution audit also passed:
 }
 ```
 
-R0 uses the same frozen Qwen revision, token-level execution, adapter locations,
-and maximum three passes. It has no PFC, workspace, external episodic memory,
-or fast weights. Replay examples will be supplied by the common sleep runner.
+The primary R0 now mean-pools the previous pass, projects it into four generic
+feedback tokens, and prepends those tokens on the next pass. It uses the same
+frozen Qwen revision, token-level execution, adapter locations, and maximum
+three passes. It has no PFC, workspace, external episodic memory, or fast
+weights. Its zero-feedback condition keeps the same four-token prefix shape.
+Replay examples will be supplied by the common sleep runner.
 
 ## Still required before qualification runs
 
@@ -76,7 +84,7 @@ or fast weights. Replay examples will be supplied by the common sleep runner.
 2. The R1 and R2 conventional baseline implementations and parameter/FLOP matching. R0 is implemented and audited.
 3. Training/evaluation loops with example-level outputs and checkpoint recovery.
 4. Short calibration jobs to measure VRAM, throughput, and wall-clock duration.
-5. The full 18-run matrix after resource scheduling.
+5. The full 21-run matrix after resource scheduling.
 6. All eight acceptance gates passing across three seeds.
 
 The `stage1r-prequalification-ready` tag is deliberately withheld until all
@@ -86,10 +94,11 @@ calibration artifacts are complete. No acceptance gate has been evaluated yet.
 ## Controller-supervision fairness contract
 
 R3 and R5 receive identical controller inputs and downstream control losses.
-R5 may receive the preregistered channel-specific auxiliary targets. A secondary
-`R3+aux` control must receive the same auxiliary-prediction capacity on five
-generic latents without a fixed semantic assignment. This separates additional
-supervision from the proposed biological channel-to-control factorization.
+R5 may receive the preregistered channel-specific auxiliary targets. The
+secondary `R3+aux` condition applies the corresponding auxiliary objective to
+five generic latents without changing parameter count or imposing a fixed
+semantic assignment. This separates additional supervision from the proposed
+biological channel-to-control factorization.
 
 The run matrix must not begin merely because the code executes.
 

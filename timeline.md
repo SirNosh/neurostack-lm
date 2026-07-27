@@ -30,3 +30,9 @@
 - Froze official PRM800K data at commit `7ecc794703b2877f63226f2477a49b34f9b25163`: 50,000 positive and 50,000 negative training steps plus 5,000/5,000 development steps, with complete source problems assigned to exactly one split.
 - Froze official FewRel data at commit `278a2315d2138810a379cd8d5718914dc56e2582`: 64 meta-train and 16 held-out relations, with 1,000 deterministic 5-way episodes for each of 1-shot and 5-shot per partition.
 - Fairness decision: R3 and R5 must receive identical controller inputs and downstream losses. A secondary R3+aux condition will match R5's auxiliary-prediction capacity without imposing semantic channel assignments.
+- Began the audited next milestone under an append-only shared-resource reservation for `neurostack-lm` (CPU RAM and disk only; no GPU yet).
+- Implemented FewRel v2 without replacing the frozen v1 artifact: deterministic 48/16/16 relation partitions, independently permuted episode-local A-E labels, visible support labels, hidden query labels, and instance-disjoint support/query examples.
+- Decision: make the FewRel local plasticity contract explicit in a small qualification head. Support representations are keys and learned A-E episode-label embeddings are values; evaluation updates detached fast state only and supports the shuffled-DA control.
+- Replaced primary R0's repeated identical inputs with four projected generic feedback tokens derived from the previous pass mean state. The zero-feedback lesion retains the same token count and compute shape.
+- Expanded the preregistered contract to seven systems by adding R3+aux, producing exactly 21 system/seed entries. R1 and R2 remain explicitly unavailable until implemented; capacity reports must not fabricate their measurements.
+- Added a standardized parameter/capacity audit and an R5 sleep-capacity-matched narrower R0 ordinary-replay control. CPU validation passes 59 tests before artifact generation and real-Qwen measurement.
