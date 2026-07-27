@@ -17,15 +17,26 @@ def test_prm800k_adapter_emits_binary_non_neutral_steps(tmp_path: Path):
                         {"text": "It is 3.", "rating": -1, "flagged": False},
                         {"text": "Consider addition.", "rating": 0, "flagged": False},
                     ],
+                    "chosen_completion": None,
+                    "human_completion": {
+                        "text": "A human suggests calculating directly.",
+                        "rating": None,
+                    },
+                },
+                {
+                    "completions": [
+                        {"text": "Therefore 1+1=2.", "rating": 1, "flagged": False}
+                    ],
                     "chosen_completion": 0,
                     "human_completion": None,
-                }
+                },
             ]
         },
     }
     raw.write_text(json.dumps(row) + "\n", encoding="utf-8")
     examples = parse_prm800k(raw)
-    assert [example.verifier_label for example in examples] == [1, 0]
+    assert [example.verifier_label for example in examples] == [1, 0, 1]
+    assert "A human suggests" in examples[-1].input_text
     assert len({example.session_id for example in examples}) == 1
     assert all("ground_truth" not in example.input_text for example in examples)
 

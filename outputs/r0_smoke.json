@@ -1,0 +1,17 @@
+{
+  "backbone_revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+  "backbone_hash_unchanged": true,
+  "r5_trainable_parameter_target": 11373945,
+  "r0_trainable_parameters": 11374788,
+  "parameter_match_error_fraction": 7.411676423615553e-05,
+  "adapter_bottlenecks": [
+    1585,
+    1585,
+    1585,
+    1585
+  ],
+  "backbone_passes": 3,
+  "adapter_matmul_flops": 681676800,
+  "peak_vram_gb": 0.9638876914978027,
+  "status": "passed"
+}

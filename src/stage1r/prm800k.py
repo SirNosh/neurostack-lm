@@ -21,7 +21,8 @@ def iter_prm800k(path: Path) -> Iterator[Stage1RExample]:
             problem_id = _problem_id(problem)
             prior_steps: list[str] = []
             for step_index, step in enumerate(row["label"]["steps"]):
-                for completion_index, completion in enumerate(step["completions"]):
+                completions = step.get("completions") or []
+                for completion_index, completion in enumerate(completions):
                     rating = completion.get("rating")
                     if rating not in (-1, 1) or completion.get("flagged") is True:
                         continue
@@ -59,9 +60,15 @@ def iter_prm800k(path: Path) -> Iterator[Stage1RExample]:
                     )
                 chosen = step.get("chosen_completion")
                 if chosen is not None:
-                    prior_steps.append(step["completions"][chosen]["text"].strip())
+                    prior_steps.append(completions[chosen]["text"].strip())
                 elif step.get("human_completion"):
-                    prior_steps.append(step["human_completion"].strip())
+                    human_completion = step["human_completion"]
+                    text = (
+                        human_completion["text"]
+                        if isinstance(human_completion, dict)
+                        else human_completion
+                    )
+                    prior_steps.append(text.strip())
 
 
 def parse_prm800k(path: Path) -> list[Stage1RExample]:

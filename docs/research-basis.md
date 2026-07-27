@@ -63,7 +63,7 @@ No source code below is copied into this repository. The papers and author-maint
 - Benchmark basis: Han et al., [FewRel: A Large-Scale Supervised Few-Shot Relation Classification Dataset](https://aclanthology.org/D18-1514/) (2018).
 - Official dataset/code: [THUNLP FewRel](https://github.com/thunlp/FewRel).
 - Stage 1R use: 5-way 1-shot and 5-shot episodes, with held-out relations and no evaluation-time gradient updates.
-- Current status: adapter not yet implemented; no FewRel result exists.
+- Current status: the official 64 meta-train and 16 held-out FewRel 1.0 relations are frozen into deterministic 5-way 1-shot and 5-shot episodes. No evaluation-time gradient updates are permitted. No fast-plasticity qualification result exists yet.
 
 ## Supporting-fact and long-context data
 
@@ -78,7 +78,8 @@ No source code below is copied into this repository. The papers and author-maint
 - Official data/code artifact: [OpenAI PRM800K](https://github.com/openai/prm800k).
 - Pilot status: invalid all-positive two-logit scaffold.
 - Stage 1R status: one correctness logit with binary cross-entropy; single-class batches are rejected by construction.
-- Missing: PRM800K balanced data preparation, earliest-error prediction, calibration, and held-out AUROC/F1.
+- Stage 1R data status: the official PRM800K release is pinned at commit `7ecc794703b2877f63226f2477a49b34f9b25163`. Ratings `+1` and `-1` produce 50,000/50,000 balanced training steps and 5,000/5,000 development steps with source-problem-disjoint splits; neutral and flagged completions are omitted.
+- Missing: earliest-error prediction, calibration, and held-out AUROC/F1.
 
 ## Wake/sleep separation and consolidation
 

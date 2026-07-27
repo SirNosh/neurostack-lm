@@ -29,7 +29,7 @@ The previous proxy remains preserved at Git tag `pilot-v0-negative`.
 
 ## Validation completed
 
-- 42 deterministic tests pass.
+- 49 deterministic tests pass.
 - Ten are integration/lifetime tests.
 - A real-Qwen token-level smoke lifetime passed:
 
@@ -51,10 +51,29 @@ The previous proxy remains preserved at Git tag `pilot-v0-negative`.
 
 This proves execution and state transitions, not learning quality.
 
+The real-Qwen R0 execution audit also passed:
+
+```json
+{
+  "r5_trainable_parameter_target": 11373945,
+  "r0_trainable_parameters": 11374788,
+  "parameter_match_error_fraction": 0.0000741,
+  "backbone_passes": 3,
+  "adapter_matmul_flops": 681676800,
+  "backbone_hash_unchanged": true,
+  "peak_vram_gb": 0.9639,
+  "status": "passed"
+}
+```
+
+R0 uses the same frozen Qwen revision, token-level execution, adapter locations,
+and maximum three passes. It has no PFC, workspace, external episodic memory,
+or fast weights. Replay examples will be supplied by the common sleep runner.
+
 ## Still required before qualification runs
 
-1. Deterministic adapters/manifests for EPBench, Multi-Session Chat, FewRel, PRM800K, CLUTRR, and the four TRACE blocks. bAbI and BABILong training adapters are complete; BABILong evaluation manifests remain to be frozen.
-2. The R0, R1, and R2 conventional baseline implementations and parameter/FLOP matching.
+1. Deterministic adapters/manifests for EPBench, Multi-Session Chat, CLUTRR, and the four TRACE blocks. bAbI, BABILong training, PRM800K, and FewRel are complete; BABILong evaluation manifests remain to be frozen.
+2. The R1 and R2 conventional baseline implementations and parameter/FLOP matching. R0 is implemented and audited.
 3. Training/evaluation loops with example-level outputs and checkpoint recovery.
 4. Short calibration jobs to measure VRAM, throughput, and wall-clock duration.
 5. The full 18-run matrix after resource scheduling.
@@ -63,6 +82,14 @@ This proves execution and state transitions, not learning quality.
 The `stage1r-prequalification-ready` tag is deliberately withheld until all
 remaining dataset manifests, R0/R1/R2 baseline implementations, and timed
 calibration artifacts are complete. No acceptance gate has been evaluated yet.
+
+## Controller-supervision fairness contract
+
+R3 and R5 receive identical controller inputs and downstream control losses.
+R5 may receive the preregistered channel-specific auxiliary targets. A secondary
+`R3+aux` control must receive the same auxiliary-prediction capacity on five
+generic latents without a fixed semantic assignment. This separates additional
+supervision from the proposed biological channel-to-control factorization.
 
 The run matrix must not begin merely because the code executes.
 
