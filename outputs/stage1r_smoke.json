@@ -1,5 +1,9 @@
 {
   "backbone_revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+  "backbone_snapshot_sha256": "9db106ad212ac058fee2222246427c9e63f1e5e1bafe2d1633b02f3939da6b67",
+  "backbone_parameter_sha256_before": "1268845104ae7e3ba3c1fceafb788d3d749248d2da9618b2a248f7fa1c184bda",
+  "backbone_parameter_sha256_after": "1268845104ae7e3ba3c1fceafb788d3d749248d2da9618b2a248f7fa1c184bda",
+  "backbone_hash_unchanged": true,
   "backbone_frozen": true,
   "adapter_layers_one_indexed": [
     6,
@@ -18,7 +22,14 @@
     1,
     1
   ],
-  "fast_pfc_matrix_l1": 0.00299072265625,
-  "peak_vram_gb": 1.035201072692871,
+  "fast_pfc_matrix_l1": 0.0022735595703125,
+  "peak_vram_gb": 0.962043285369873,
+  "expert_flop_audit": {
+    "execution": "dense-experts-after-sparse-routing",
+    "computed_experts": 4,
+    "selected_experts": 2,
+    "actual_expert_flops": 440401920,
+    "hypothetical_selected_only_flops": 220200960
+  },
   "status": "passed"
 }

@@ -458,8 +458,12 @@ class Stage1RNeuroStack(nn.Module):
                 )
                 new_pfc.slots = new_pfc.slots + correction.unsqueeze(1)
             if lesions.pfc:
-                new_pfc.slots[:, 2] = new_pfc.slots[:, 2] * (
-                    1 - controls.strategy_reset.unsqueeze(-1)
+                one = torch.ones_like(controls.strategy_reset)
+                slot_scale = torch.stack(
+                    [one, one, 1 - controls.strategy_reset, one], dim=1
+                )
+                new_pfc = type(new_pfc)(
+                    new_pfc.slots * slot_scale.unsqueeze(-1)
                 )
 
             operation_logits = self.working_operation(controller_input)

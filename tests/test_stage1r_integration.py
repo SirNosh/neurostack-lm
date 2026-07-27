@@ -58,6 +58,29 @@ def test_first_cycle_router_sees_current_contextual_input():
     assert not torch.equal(first.routing_input[:, :256], second.routing_input[:, :256])
 
 
+def test_two_cycle_task_loss_reaches_memory_and_workspace_decisions():
+    model = make_model()
+    model.train()
+    ids, mask = toy_inputs()
+    state = model.initialize_state(2, device="cpu", dtype=torch.float32)
+    output = model(
+        ids,
+        mask,
+        state,
+        EpisodicMemory(),
+        session_ids=["a", "b"],
+        task_contexts=["x", "x"],
+        cycles=2,
+    )
+    F.cross_entropy(output.final.token_logits, torch.tensor([1, 2])).backward()
+    assert model.working_operation.weight.grad is not None
+    assert model.working_operation.weight.grad.abs().sum() > 0
+    assert model.working_slot.weight.grad is not None
+    assert model.working_slot.weight.grad.abs().sum() > 0
+    assert model.workspace.scorer[-1].weight.grad is not None
+    assert model.workspace.scorer[-1].weight.grad.abs().sum() > 0
+
+
 def test_state_persists_across_calls_and_reset_isolates_examples():
     model = make_model()
     ids, mask = toy_inputs()

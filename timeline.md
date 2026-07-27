@@ -23,4 +23,6 @@
 - Decision: count the current adapter bank honestly as dense four-expert execution. Sparse routing does not imply sparse compute until dispatch itself is sparse.
 - Implemented the exact common `Stage1RExample` schema. Froze deterministic bAbI qa1-qa5 manifests (25,000 train, 2,500 dev, 5,000 official test) and the official BABILong 4K qa1-qa5 training selection (10,000 examples) at dataset revision `b3513ef7c25c54ce706054530d47668c532019d6`.
 - Decision: do not invent BABILong supporting-fact annotations because the official training rows expose only input, question, and target.
-- CPU validation now passes 41 tests. The real-Qwen hash-verified smoke is waiting for the shared GPU ledger to become free.
+- CPU validation now passes 42 tests, including an integrated two-cycle task-loss gradient test. The real-Qwen hash-verified smoke is waiting for the shared GPU ledger to become free.
+- The integrated gradient test exposed an in-place PFC strategy-reset update that invalidated autograd version tracking. Replaced it with an out-of-place slot scale; the task loss now reaches working-memory operation/address heads and the workspace scorer.
+- Re-ran the bounded real-Qwen lifetime after obtaining an exclusive ledger reservation. It passed in about 43 seconds at 0.962 GB peak CUDA allocation; the in-memory backbone SHA-256 was identical before and after, scoped recall returned one event per session, and the FLOP audit counted all four densely evaluated experts.

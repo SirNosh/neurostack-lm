@@ -29,19 +29,22 @@ The previous proxy remains preserved at Git tag `pilot-v0-negative`.
 
 ## Validation completed
 
-- 41 deterministic tests pass.
-- Nine are integration/lifetime tests.
+- 42 deterministic tests pass.
+- Ten are integration/lifetime tests.
 - A real-Qwen token-level smoke lifetime passed:
 
 ```json
 {
+  "backbone_snapshot_sha256": "9db106ad212ac058fee2222246427c9e63f1e5e1bafe2d1633b02f3939da6b67",
+  "backbone_hash_unchanged": true,
   "backbone_frozen": true,
   "adapter_layers_one_indexed": [6, 12, 18, 24],
   "workspace_shape": [2, 4, 256],
   "episodic_events_written": 2,
   "retrieved_events": [1, 1],
-  "fast_pfc_matrix_l1": 0.00299072265625,
-  "peak_vram_gb": 1.0352,
+  "fast_pfc_matrix_l1": 0.0022735595703125,
+  "peak_vram_gb": 0.9620,
+  "actual_dense_expert_flops": 440401920,
   "status": "passed"
 }
 ```
