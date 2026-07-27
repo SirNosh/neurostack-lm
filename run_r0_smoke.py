@@ -123,7 +123,7 @@ def main() -> None:
         ),
     }
     path = ROOT / "outputs" / "r0_smoke.json"
-    path.write_text(json.dumps(result, indent=2), encoding="utf-8")
+    path.write_text(json.dumps(result, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(result, indent=2))
 
 

@@ -2,16 +2,35 @@
   "backbone_revision": "7ae557604adf67be50417f59c2c2f167def9a775",
   "backbone_hash_unchanged": true,
   "r5_trainable_parameter_target": 11373945,
-  "r0_trainable_parameters": 11374788,
-  "parameter_match_error_fraction": 7.411676423615553e-05,
+  "r0_trainable_parameters": 11374787,
+  "parameter_match_error_fraction": 7.40288439938825e-05,
   "adapter_bottlenecks": [
-    1585,
-    1585,
-    1585,
-    1585
+    1137,
+    1137,
+    1137,
+    1136
   ],
+  "feedback_tokens": 4,
   "backbone_passes": 3,
-  "adapter_matmul_flops": 681676800,
-  "peak_vram_gb": 0.9638876914978027,
+  "conditions": {
+    "one_pass": {
+      "backbone_passes": 1
+    },
+    "three_pass": {
+      "backbone_passes": 3,
+      "successive_logit_max_abs_deltas": [
+        17.25,
+        13.625
+      ]
+    },
+    "zero_feedback": {
+      "backbone_passes": 3,
+      "iterative_vs_zero_logit_max_abs_delta": 14.25
+    }
+  },
+  "adapter_matmul_flops": 619265024,
+  "feedback_matmul_flops": 12845056,
+  "total_mechanism_matmul_flops": 632110080,
+  "peak_vram_gb": 0.9599142074584961,
   "status": "passed"
 }

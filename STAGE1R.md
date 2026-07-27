@@ -61,12 +61,15 @@ The real-Qwen R0 execution audit also passed:
 ```json
 {
   "r5_trainable_parameter_target": 11373945,
-  "r0_trainable_parameters": 11374788,
-  "parameter_match_error_fraction": 0.0000741,
+  "r0_trainable_parameters": 11374787,
+  "parameter_match_error_fraction": 0.0000740,
+  "feedback_tokens": 4,
   "backbone_passes": 3,
-  "adapter_matmul_flops": 681676800,
+  "successive_logit_max_abs_deltas": [17.25, 13.625],
+  "iterative_vs_zero_feedback_logit_max_abs_delta": 14.25,
+  "total_mechanism_matmul_flops": 632110080,
   "backbone_hash_unchanged": true,
-  "peak_vram_gb": 0.9639,
+  "peak_vram_gb": 0.9599,
   "status": "passed"
 }
 ```
