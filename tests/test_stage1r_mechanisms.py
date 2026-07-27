@@ -100,6 +100,32 @@ def test_working_memory_merge_combines_values():
     torch.testing.assert_close(merged.values[0, 0], torch.full((6,), 3.0))
 
 
+def test_working_memory_straight_through_choices_receive_gradients():
+    memory = WorkingMemory(slots=8, key_dim=4, value_dim=6)
+    state = memory.initialize(2)
+    operation_logits = torch.randn(2, 5, requires_grad=True)
+    slot_logits = torch.randn(2, 8, requires_grad=True)
+    operation_soft = operation_logits.softmax(-1)
+    slot_soft = slot_logits.softmax(-1)
+    operation_hard = torch.nn.functional.one_hot(
+        torch.ones(2, dtype=torch.long), 5
+    ).float()
+    slot_hard = torch.nn.functional.one_hot(torch.zeros(2, dtype=torch.long), 8).float()
+    updated = memory.operate_differentiable(
+        state,
+        operation_hard + operation_soft - operation_soft.detach(),
+        slot_hard + slot_soft - slot_soft.detach(),
+        key=torch.randn(2, 4),
+        value=torch.randn(2, 6),
+        confidence=torch.full((2,), 0.8),
+    )
+    updated.values.square().sum().backward()
+    assert operation_logits.grad is not None
+    assert slot_logits.grad is not None
+    assert operation_logits.grad.abs().sum() > 0
+    assert slot_logits.grad.abs().sum() > 0
+
+
 def test_workspace_capacity_is_exactly_four():
     workspace = Workspace(value_dim=8, capacity=4, broadcast_dim=12)
     result = workspace.compete([("token", torch.randn(2, 7, 8))])
@@ -113,6 +139,19 @@ def test_workspace_broadcast_projects_all_slots():
     broadcast = workspace.broadcast(result)
     assert broadcast.shape == (2, 4, 12)
     assert not torch.equal(broadcast, torch.zeros_like(broadcast))
+
+
+def test_workspace_soft_admission_trains_scorer_and_exposes_candidates():
+    workspace = Workspace(value_dim=8, capacity=4, broadcast_dim=12)
+    workspace.train()
+    result = workspace.compete([("token", torch.randn(2, 7, 8))])
+    result.slots.square().sum().backward()
+    assert result.all_candidate_logits.shape == (2, 7)
+    assert result.selected_indices.shape == (2, 4)
+    assert result.candidate_source_ids.shape == (2, 7)
+    assert result.candidate_valid_masks.all()
+    assert workspace.scorer[-1].weight.grad is not None
+    assert workspace.scorer[-1].weight.grad.abs().sum() > 0
 
 
 def test_router_selects_exactly_top_two():
@@ -170,6 +209,21 @@ def test_episodic_retrieval_is_session_isolated():
     assert result.events[0][0].session_id == "a"
 
 
+def test_episodic_retrieval_breadth_is_per_example():
+    memory = EpisodicMemory(value_dim=4, top_k=4)
+    for value in range(1, 5):
+        memory.write(_event("a", value))
+        memory.write(_event("b", value))
+    result = memory.retrieve(
+        torch.tensor([[1.0, 0.0], [1.0, 0.0]]),
+        session_ids=["a", "b"],
+        breadths=torch.tensor([1, 3]),
+    )
+    assert len(result.events[0]) == 1
+    assert len(result.events[1]) == 3
+    assert (result.scores[0, 1:] < -1e3).all()
+
+
 def test_episodic_event_has_no_answer_label_field():
     names = {item.name for item in fields(EpisodicEvent)}
     assert "answer" not in names
@@ -215,6 +269,23 @@ def test_each_modulator_changes_assigned_control():
     assert ach.encode_weight > baseline.encode_weight
     assert serotonin.continue_bias > baseline.continue_bias
     assert overload.conflict_pressure > baseline.conflict_pressure
+
+
+def test_generic_controller_is_same_size_and_can_cross_control_channels():
+    differentiated = ModulatorController(3, differentiated=True)
+    generic = ModulatorController(3, differentiated=False)
+    assert sum(p.numel() for p in differentiated.parameters()) == sum(
+        p.numel() for p in generic.parameters()
+    )
+    with torch.no_grad():
+        generic.control_map.weight.zero_()
+        generic.control_map.bias.zero_()
+        generic.control_map.weight[8, 0] = 4
+    low = torch.zeros(1)
+    high = torch.ones(1)
+    baseline = generic.controls(ModulatorSignals(low, low, low, low, low))
+    changed = generic.controls(ModulatorSignals(high, low, low, low, low))
+    assert changed.verify_threshold > baseline.verify_threshold
 
 
 def test_verifier_requires_both_classes():

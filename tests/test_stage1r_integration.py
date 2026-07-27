@@ -31,6 +31,33 @@ def test_workspace_broadcast_changes_next_cycle_representation():
     )
 
 
+def test_first_cycle_router_sees_current_contextual_input():
+    model = make_model()
+    ids, mask = toy_inputs()
+    state = model.initialize_state(2, device="cpu", dtype=torch.float32)
+    first = model(
+        ids,
+        mask,
+        state,
+        EpisodicMemory(),
+        session_ids=["a", "b"],
+        task_contexts=["x", "x"],
+        cycles=1,
+    ).final
+    changed_ids = ids.clone()
+    changed_ids[:, -1] = (changed_ids[:, -1] + 1) % model.backbone.lm_head.out_features
+    second = model(
+        changed_ids,
+        mask,
+        state,
+        EpisodicMemory(),
+        session_ids=["a", "b"],
+        task_contexts=["x", "x"],
+        cycles=1,
+    ).final
+    assert not torch.equal(first.routing_input[:, :256], second.routing_input[:, :256])
+
+
 def test_state_persists_across_calls_and_reset_isolates_examples():
     model = make_model()
     ids, mask = toy_inputs()
@@ -78,7 +105,8 @@ def test_wake_feedback_changes_fast_state_but_not_slow_parameters():
     updated = model.apply_wake_feedback(
         output,
         outcome=torch.ones(2),
-        encode_mask=torch.tensor([True, False]),
+        encode_targets=torch.tensor([True, False]),
+        bootstrap_mode=True,
         episodic_memory=memory,
         session_ids=["a", "b"],
         task_contexts=["x", "y"],
@@ -89,6 +117,34 @@ def test_wake_feedback_changes_fast_state_but_not_slow_parameters():
     assert len(memory.events) == 1
     for name, parameter in model.named_parameters():
         torch.testing.assert_close(parameter, before[name])
+
+
+def test_eval_episodic_write_uses_model_decision_without_annotation():
+    model = make_model()
+    model.eval()
+    ids, mask = toy_inputs()
+    state = model.initialize_state(2, device="cpu", dtype=torch.float32)
+    memory = EpisodicMemory()
+    output = model(
+        ids,
+        mask,
+        state,
+        memory,
+        session_ids=["a", "b"],
+        task_contexts=["x", "x"],
+        cycles=1,
+    ).final
+    output.controls.memory_write[:] = torch.tensor([0.9, 0.1])
+    model.apply_wake_feedback(
+        output,
+        outcome=torch.ones(2),
+        episodic_memory=memory,
+        session_ids=["a", "b"],
+        task_contexts=["x", "x"],
+        timestamps=[1, 1],
+        provenances=["model", "model"],
+    )
+    assert [event.session_id for event in memory.events] == ["a"]
 
 
 def test_sleep_step_changes_only_allowed_slow_parameters():
@@ -145,7 +201,8 @@ def test_episodic_lesion_returns_no_retrieved_events():
     model.apply_wake_feedback(
         seeded,
         outcome=torch.ones(2),
-        encode_mask=torch.ones(2, dtype=torch.bool),
+        encode_targets=torch.ones(2, dtype=torch.bool),
+        bootstrap_mode=True,
         episodic_memory=memory,
         session_ids=["a", "b"],
         task_contexts=["x", "x"],
@@ -226,7 +283,8 @@ def test_lesion_switches_disable_assigned_paths():
     fast_off_state = model.apply_wake_feedback(
         control_off,
         outcome=torch.ones(2),
-        encode_mask=torch.zeros(2, dtype=torch.bool),
+        encode_targets=torch.zeros(2, dtype=torch.bool),
+        bootstrap_mode=True,
         episodic_memory=memory,
         session_ids=["a", "b"],
         task_contexts=["x", "x"],
@@ -255,7 +313,8 @@ def test_deterministic_end_to_end_smoke_lifetime():
         state = model.apply_wake_feedback(
             wake,
             outcome=torch.tensor([1.0, -1.0]),
-            encode_mask=torch.tensor([True, True]),
+            encode_targets=torch.tensor([True, True]),
+            bootstrap_mode=True,
             episodic_memory=memory,
             session_ids=["a", "b"],
             task_contexts=["x", "x"],

@@ -18,3 +18,9 @@
 - Ran a real-Qwen two-cycle smoke lifetime: four-slot broadcast, two scoped event writes, retrieval in both sessions, and nonzero rank-8 fast state all executed with the backbone frozen.
 - Added shared-resource coordination under the name `neurostack-lm`; no long training job will start without an active reservation and calibrated duration.
 - Decision: do not start the 18-run qualification matrix until dataset adapters, R0/R1/R2 baselines, and a short resource calibration exist. Execution success is not a qualification result.
+- Audited the mechanism core against the prequalification review. Corrected the R3 fairness issue with a same-sized unrestricted 5-to-12 controller, moved routing to the current contextual state after layer 5, and made working-memory and workspace decisions differentiable.
+- Made retrieval breadth row-specific and evaluation-time episodic writes model-controlled. Added explicit bootstrap losses for working memory, workspace admission, and episodic write targets.
+- Decision: count the current adapter bank honestly as dense four-expert execution. Sparse routing does not imply sparse compute until dispatch itself is sparse.
+- Implemented the exact common `Stage1RExample` schema. Froze deterministic bAbI qa1-qa5 manifests (25,000 train, 2,500 dev, 5,000 official test) and the official BABILong 4K qa1-qa5 training selection (10,000 examples) at dataset revision `b3513ef7c25c54ce706054530d47668c532019d6`.
+- Decision: do not invent BABILong supporting-fact annotations because the official training rows expose only input, question, and target.
+- CPU validation now passes 41 tests. The real-Qwen hash-verified smoke is waiting for the shared GPU ledger to become free.

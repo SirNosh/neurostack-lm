@@ -77,6 +77,7 @@ class CycleOutput:
     workspace: WorkspaceState
     broadcast_tokens: torch.Tensor | None
     routing: RoutingResult
+    routing_input: torch.Tensor
     retrieval: RetrievalResult
     modulators: ModulatorSignals
     controls: ControlValues
@@ -85,6 +86,10 @@ class CycleOutput:
     appraisal: torch.Tensor
     pfc_input: torch.Tensor
     working_query: torch.Tensor
+    working_operation_logits: torch.Tensor
+    working_slot_logits: torch.Tensor
+    working_write_key: torch.Tensor
+    working_write_value: torch.Tensor
     retrieval_summary: torch.Tensor
 
 
@@ -143,6 +148,10 @@ class Stage1RNeuroStack(nn.Module):
         self.appraisal_candidate = nn.Linear(6, 256)
         self.fast_weights = FastWeightBank(rank=8)
         self._active_routing: RoutingResult | None = None
+        self._active_routing_input: torch.Tensor | None = None
+        self._routing_state: CognitiveState | None = None
+        self._routing_lesions = LesionConfig()
+        self._routing_mask: torch.Tensor | None = None
         self._hook_handles: list[torch.utils.hooks.RemovableHandle] = []
         self._install_adapter_hooks()
 
@@ -166,10 +175,6 @@ class Stage1RNeuroStack(nn.Module):
             local_files_only=True,
             attn_implementation="sdpa",
         ).to(device)
-        if hasattr(backbone, "gradient_checkpointing_enable"):
-            backbone.gradient_checkpointing_enable()
-        if hasattr(backbone, "enable_input_require_grads"):
-            backbone.enable_input_require_grads()
         model = cls(
             backbone, differentiated_modulators=differentiated_modulators
         ).to(device=device, dtype=dtype)
@@ -182,6 +187,67 @@ class Stage1RNeuroStack(nn.Module):
     def _install_adapter_hooks(self) -> None:
         if len(self.decoder_layers) <= max(self.adapter_layer_indices):
             raise ValueError("backbone does not expose the required adapter layers")
+        if self.adapter_layer_indices[0] <= 4:
+            raise ValueError("the first adapter must follow the contextual routing prefix")
+
+        def early_router_hook(_module, _inputs, output):
+            hidden = output[0] if isinstance(output, tuple) else output
+            if self._routing_state is None or self._routing_mask is None:
+                raise RuntimeError("routing context was not initialized")
+            mask = self._routing_mask.unsqueeze(-1)
+            pooled = (hidden * mask).sum(1) / mask.sum(1).clamp_min(1)
+            current_token = self.token_projection(pooled)
+            pfc = self._routing_state.pfc.slots.mean(1)
+            occupied = self._routing_state.working_memory.occupied.unsqueeze(-1)
+            working = (
+                self._routing_state.working_memory.values * occupied
+            ).sum(1) / occupied.sum(1).clamp_min(1)
+            router_input = torch.cat([current_token, pfc, working], dim=-1)
+            signals = self.modulators(router_input, self._routing_state.overload)
+            if not self._routing_lesions.modulators:
+                neutral = torch.full_like(signals.ne, 0.5)
+                signals = ModulatorSignals(
+                    da=torch.zeros_like(signals.da),
+                    ne=neutral,
+                    ach=neutral,
+                    serotonin=neutral,
+                    overload=torch.zeros_like(signals.overload),
+                )
+            controls = self.modulators.controls(signals)
+            fast_hidden = (
+                self.fast_weights.router_query.apply(
+                    current_token, self._routing_state.fast_weights.router_query
+                )
+                if self._routing_lesions.fast_weights
+                else None
+            )
+            routing = self.router(
+                router_input,
+                temperature=(
+                    controls.router_temperature
+                    if self._routing_lesions.modulators
+                    else 1.0
+                ),
+                fast_hidden=fast_hidden,
+            )
+            if not self._routing_lesions.routing:
+                uniform = torch.full_like(routing.probabilities, 0.25)
+                indices = torch.tensor([0, 1], device=hidden.device).expand(
+                    *uniform.shape[:-1], 2
+                )
+                routing = RoutingResult(
+                    torch.zeros_like(routing.logits),
+                    uniform,
+                    indices,
+                    torch.full_like(indices, 0.5, dtype=uniform.dtype),
+                )
+            self._active_routing = routing
+            self._active_routing_input = router_input
+            return output
+
+        self._hook_handles.append(
+            self.decoder_layers[4].register_forward_hook(early_router_hook)
+        )
         for location, layer_index in enumerate(self.adapter_layer_indices):
             def hook(_module, _inputs, output, location=location):
                 if self._active_routing is None:
@@ -253,14 +319,6 @@ class Stage1RNeuroStack(nn.Module):
             0,
         )
 
-    def _initial_router_input(self, state: CognitiveState) -> torch.Tensor:
-        pfc = state.pfc.slots.mean(1)
-        occupied = state.working_memory.occupied.unsqueeze(-1)
-        working = (
-            state.working_memory.values * occupied
-        ).sum(1) / occupied.sum(1).clamp_min(1)
-        return torch.cat([torch.zeros_like(pfc), pfc, working], dim=-1)
-
     def _run_backbone(
         self,
         input_ids: torch.Tensor,
@@ -268,6 +326,7 @@ class Stage1RNeuroStack(nn.Module):
         broadcast: torch.Tensor | None,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         if broadcast is None:
+            self._routing_mask = attention_mask
             output = self.backbone.model(
                 input_ids=input_ids,
                 attention_mask=attention_mask,
@@ -282,6 +341,7 @@ class Stage1RNeuroStack(nn.Module):
                 broadcast.shape[:2], device=attention_mask.device, dtype=attention_mask.dtype
             )
             token_mask = torch.cat([prefix_mask, attention_mask], dim=1)
+            self._routing_mask = token_mask
             output = self.backbone.model(
                 inputs_embeds=inputs_embeds,
                 attention_mask=token_mask,
@@ -312,67 +372,18 @@ class Stage1RNeuroStack(nn.Module):
         outputs: list[CycleOutput] = []
         broadcast = None
         for cycle in range(cycles):
-            router_input = self._initial_router_input(state)
-            preliminary_signals = self.modulators(router_input, state.overload)
-            controls = self.modulators.controls(preliminary_signals)
-            fast_router = (
-                self.fast_weights.router_query.apply(
-                    router_input[:, :256], state.fast_weights.router_query
-                )
-                if lesions.fast_weights
-                else None
-            )
-            routing = self.router(
-                router_input,
-                temperature=controls.router_temperature if lesions.modulators else 1.0,
-                fast_hidden=fast_router,
-            )
-            if not lesions.routing:
-                uniform = torch.full_like(routing.probabilities, 0.25)
-                indices = torch.tensor([0, 1], device=input_ids.device).expand(
-                    *uniform.shape[:-1], 2
-                )
-                routing = RoutingResult(
-                    torch.zeros_like(routing.logits),
-                    uniform,
-                    indices,
-                    torch.full_like(indices, 0.5, dtype=uniform.dtype),
-                )
-            self._active_routing = routing
+            self._active_routing = None
+            self._active_routing_input = None
+            self._routing_state = state
+            self._routing_lesions = lesions
             pooled, token_logits = self._run_backbone(
                 input_ids, attention_mask, broadcast
             )
+            if self._active_routing is None or self._active_routing_input is None:
+                raise RuntimeError("early-layer routing hook did not run")
+            routing = self._active_routing
+            router_input = self._active_routing_input
             token = self.token_projection(pooled)
-            query_key = self.episodic_key(token)
-            breadth = int(controls.retrieval_breadth.max().item())
-            if lesions.episodic:
-                retrieval = episodic_memory.retrieve(
-                    query_key,
-                    session_ids=session_ids,
-                    task_contexts=task_contexts,
-                    breadth=breadth,
-                )
-            else:
-                empty_memory = EpisodicMemory(top_k=breadth)
-                retrieval = empty_memory.retrieve(
-                    query_key, session_ids=session_ids, breadth=breadth
-                )
-            retrieval_weights = F.softmax(retrieval.scores, dim=-1)
-            retrieval_weights = torch.where(
-                retrieval.scores > -1e3,
-                retrieval_weights,
-                torch.zeros_like(retrieval_weights),
-            )
-            retrieval_weights = retrieval_weights.to(retrieval.values.dtype)
-            retrieval_summary = torch.einsum(
-                "bk,bkd->bd", retrieval_weights, retrieval.values
-            )
-            retrieval_summary = self.retrieval_integration(retrieval_summary)
-            if lesions.fast_weights:
-                retrieval_summary = retrieval_summary + self.fast_weights.retrieval.apply(
-                    retrieval_summary, state.fast_weights.retrieval
-                )
-
             working_query = self.token_key(token)
             if lesions.working_memory:
                 working_read, _ = self.working_memory.read(
@@ -399,6 +410,35 @@ class Stage1RNeuroStack(nn.Module):
                     overload=torch.zeros_like(signals.overload),
                 )
             controls = self.modulators.controls(signals)
+            query_key = self.episodic_key(token)
+            if lesions.episodic:
+                retrieval = episodic_memory.retrieve(
+                    query_key,
+                    session_ids=session_ids,
+                    task_contexts=task_contexts,
+                    breadths=controls.retrieval_breadth,
+                )
+            else:
+                empty_memory = EpisodicMemory()
+                retrieval = empty_memory.retrieve(
+                    query_key,
+                    session_ids=session_ids,
+                    breadths=controls.retrieval_breadth,
+                )
+            retrieval_weights = F.softmax(retrieval.scores, dim=-1)
+            retrieval_weights = torch.where(
+                retrieval.scores > -1e3,
+                retrieval_weights,
+                torch.zeros_like(retrieval_weights),
+            ).to(retrieval.values.dtype)
+            retrieval_summary = torch.einsum(
+                "bk,bkd->bd", retrieval_weights, retrieval.values
+            )
+            retrieval_summary = self.retrieval_integration(retrieval_summary)
+            if lesions.fast_weights:
+                retrieval_summary = retrieval_summary + self.fast_weights.retrieval.apply(
+                    retrieval_summary, state.fast_weights.retrieval
+                )
             retrieval_summary = retrieval_summary * controls.retrieve_weight.unsqueeze(-1)
             pfc_input = torch.cat(
                 [token, pfc_summary, working_read, retrieval_summary, token], dim=-1
@@ -422,15 +462,27 @@ class Stage1RNeuroStack(nn.Module):
                     1 - controls.strategy_reset.unsqueeze(-1)
                 )
 
-            operation = self.working_operation(controller_input).argmax(-1)
-            slot = self.working_slot(controller_input).argmax(-1)
+            operation_logits = self.working_operation(controller_input)
+            slot_logits = self.working_slot(controller_input)
+            if self.training:
+                operation_sample = F.gumbel_softmax(
+                    operation_logits, tau=1.0, hard=True
+                )
+                slot_sample = F.gumbel_softmax(slot_logits, tau=1.0, hard=True)
+            else:
+                operation_sample = F.one_hot(
+                    operation_logits.argmax(-1), len(MemoryOperation)
+                ).to(operation_logits.dtype)
+                slot_sample = F.one_hot(slot_logits.argmax(-1), 8).to(slot_logits.dtype)
+            write_key = self.working_key(controller_input)
+            write_value = self.working_value(controller_input)
             if lesions.working_memory:
-                new_working = self.working_memory.operate(
+                new_working = self.working_memory.operate_differentiable(
                     state.working_memory,
-                    operation,
-                    slot,
-                    key=self.working_key(controller_input),
-                    value=self.working_value(controller_input),
+                    operation_sample,
+                    slot_sample,
+                    key=write_key,
+                    value=write_value,
                     confidence=controls.memory_write,
                 )
             else:
@@ -501,6 +553,7 @@ class Stage1RNeuroStack(nn.Module):
                     workspace,
                     broadcast,
                     routing,
+                    router_input,
                     retrieval,
                     signals,
                     controls,
@@ -509,10 +562,16 @@ class Stage1RNeuroStack(nn.Module):
                     appraisal,
                     pfc_input,
                     working_query,
+                    operation_logits,
+                    slot_logits,
+                    write_key,
+                    write_value,
                     retrieval_summary,
                 )
             )
         self._active_routing = None
+        self._active_routing_input = None
+        self._routing_state = None
         return LifetimeOutput(outputs)
 
     @torch.no_grad()
@@ -521,12 +580,14 @@ class Stage1RNeuroStack(nn.Module):
         output: CycleOutput,
         *,
         outcome: torch.Tensor,
-        encode_mask: torch.Tensor,
         episodic_memory: EpisodicMemory,
         session_ids: Sequence[str],
         task_contexts: Sequence[str],
         timestamps: Sequence[int],
         provenances: Sequence[str],
+        encode_targets: torch.Tensor | None = None,
+        bootstrap_mode: bool = False,
+        write_threshold: float = 0.5,
         lesions: LesionConfig = LesionConfig(),
     ) -> CognitiveState:
         state = output.state
@@ -571,8 +632,14 @@ class Stage1RNeuroStack(nn.Module):
                     ne=ne,
                 ),
             )
+        if bootstrap_mode:
+            if encode_targets is None:
+                raise ValueError("bootstrap episodic writing requires encode_targets")
+            write_decisions = encode_targets.bool()
+        else:
+            write_decisions = output.controls.memory_write >= write_threshold
         if lesions.episodic:
-            for row, should_encode in enumerate(encode_mask.bool()):
+            for row, should_encode in enumerate(write_decisions):
                 if not should_encode:
                     continue
                 episodic_memory.write(

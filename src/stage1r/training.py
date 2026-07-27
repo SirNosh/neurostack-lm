@@ -62,6 +62,64 @@ def router_qualification_loss(
     }
 
 
+def working_memory_loss(
+    operation_logits: torch.Tensor,
+    slot_logits: torch.Tensor,
+    operation_targets: torch.Tensor,
+    slot_targets: torch.Tensor,
+    *,
+    occupied: torch.Tensor,
+    protection: torch.Tensor,
+    write_sparsity_weight: float = 0.01,
+    false_overwrite_weight: float = 0.1,
+) -> tuple[torch.Tensor, dict[str, torch.Tensor]]:
+    """Supervise operation/address selection and penalize unnecessary writes."""
+    operation = F.cross_entropy(operation_logits, operation_targets)
+    slot = F.cross_entropy(slot_logits, slot_targets)
+    operation_probs = operation_logits.softmax(-1)
+    slot_probs = slot_logits.softmax(-1)
+    write_probability = operation_probs[:, 1:3].sum(-1)
+    protected_probability = (slot_probs * protection).sum(-1)
+    occupied_probability = (slot_probs * occupied.to(slot_probs.dtype)).sum(-1)
+    sparsity = write_probability.mean()
+    false_overwrite = (write_probability * protected_probability * occupied_probability).mean()
+    total = (
+        operation
+        + slot
+        + write_sparsity_weight * sparsity
+        + false_overwrite_weight * false_overwrite
+    )
+    return total, {
+        "working_operation": operation.detach(),
+        "working_slot": slot.detach(),
+        "working_write_sparsity": sparsity.detach(),
+        "working_false_overwrite": false_overwrite.detach(),
+    }
+
+
+def workspace_admission_loss(
+    candidate_logits: torch.Tensor,
+    admission_targets: torch.Tensor,
+    valid_mask: torch.Tensor,
+) -> torch.Tensor:
+    """Binary admission supervision over every valid workspace candidate."""
+    selected_logits = candidate_logits[valid_mask]
+    selected_targets = admission_targets.to(candidate_logits.dtype)[valid_mask]
+    if selected_logits.numel() == 0:
+        raise ValueError("workspace admission loss needs at least one valid candidate")
+    return F.binary_cross_entropy_with_logits(selected_logits, selected_targets)
+
+
+def memory_write_loss(
+    write_probability: torch.Tensor, encode_targets: torch.Tensor
+) -> torch.Tensor:
+    """Bootstrap-only supervision for the learned episodic write decision."""
+    return F.binary_cross_entropy(
+        write_probability.clamp(1e-6, 1 - 1e-6),
+        encode_targets.to(write_probability.dtype),
+    )
+
+
 @dataclass
 class EWCState:
     reference: dict[str, torch.Tensor]
@@ -134,4 +192,3 @@ def changed_parameters(
         for name, parameter in model.named_parameters()
         if not torch.equal(parameter.detach().cpu(), snapshot[name])
     }
-

@@ -216,6 +216,109 @@ class WorkingMemory(nn.Module):
                 result.occupied[row, index] = True
         return result
 
+    def operate_differentiable(
+        self,
+        state: WorkingMemoryState,
+        operation_sample: torch.Tensor,
+        slot_sample: torch.Tensor,
+        *,
+        key: torch.Tensor,
+        value: torch.Tensor,
+        confidence: torch.Tensor,
+    ) -> WorkingMemoryState:
+        """Apply straight-through operation and slot samples.
+
+        Tensor contents use the differentiable samples; boolean occupancy uses
+        their hard forward choices only.
+        """
+        batch = state.keys.shape[0]
+        if operation_sample.shape != (batch, len(MemoryOperation)):
+            raise ValueError("operation_sample must be [batch,5]")
+        if slot_sample.shape != (batch, self.slots):
+            raise ValueError("slot_sample must be [batch,8]")
+        slot3 = slot_sample.unsqueeze(-1)
+        writable = (1 - state.protection).unsqueeze(-1)
+        write_mask = slot3 * writable
+
+        keep_keys, keep_values = state.keys, state.values
+        keep_confidence = state.confidence
+        keep_protection = state.protection
+
+        replace_keys = keep_keys * (1 - write_mask) + key.unsqueeze(1) * write_mask
+        replace_values = keep_values * (1 - write_mask) + value.unsqueeze(1) * write_mask
+        replace_confidence = keep_confidence * (1 - write_mask.squeeze(-1)) + (
+            confidence.unsqueeze(1) * write_mask.squeeze(-1)
+        )
+
+        old_weight = keep_confidence.unsqueeze(-1).clamp_min(0)
+        new_weight = confidence[:, None, None]
+        denominator = (old_weight + new_weight).clamp_min(1e-6)
+        merged_keys = (old_weight * keep_keys + new_weight * key.unsqueeze(1)) / denominator
+        merged_values = (
+            old_weight * keep_values + new_weight * value.unsqueeze(1)
+        ) / denominator
+        merge_keys = keep_keys * (1 - write_mask) + merged_keys * write_mask
+        merge_values = keep_values * (1 - write_mask) + merged_values * write_mask
+        merge_confidence = keep_confidence * (1 - write_mask.squeeze(-1)) + (
+            denominator.squeeze(-1).clamp_max(1) * write_mask.squeeze(-1)
+        )
+
+        clear_keys = keep_keys * (1 - write_mask)
+        clear_values = keep_values * (1 - write_mask)
+        clear_confidence = keep_confidence * (1 - write_mask.squeeze(-1))
+        protect = keep_protection * (1 - slot_sample) + slot_sample
+
+        key_candidates = torch.stack(
+            [keep_keys, replace_keys, merge_keys, clear_keys, keep_keys], dim=1
+        )
+        value_candidates = torch.stack(
+            [keep_values, replace_values, merge_values, clear_values, keep_values],
+            dim=1,
+        )
+        confidence_candidates = torch.stack(
+            [
+                keep_confidence,
+                replace_confidence,
+                merge_confidence,
+                clear_confidence,
+                keep_confidence,
+            ],
+            dim=1,
+        )
+        protection_candidates = torch.stack(
+            [
+                keep_protection,
+                keep_protection,
+                keep_protection,
+                keep_protection,
+                protect,
+            ],
+            dim=1,
+        )
+        op4 = operation_sample[:, :, None, None]
+        op3 = operation_sample[:, :, None]
+        keys = (key_candidates * op4).sum(1)
+        values = (value_candidates * op4).sum(1)
+        confidences = (confidence_candidates * op3).sum(1)
+        protections = (protection_candidates * op3).sum(1)
+
+        hard = self.operate(
+            state,
+            operation_sample.argmax(-1).detach(),
+            slot_sample.argmax(-1).detach(),
+            key=key,
+            value=value,
+            confidence=confidence,
+        )
+        return WorkingMemoryState(
+            keys=keys,
+            values=values,
+            confidence=confidences,
+            age=hard.age,
+            protection=protections,
+            occupied=hard.occupied,
+        )
+
     def reset(self, state: WorkingMemoryState, mask: torch.Tensor) -> WorkingMemoryState:
         fresh = self.initialize(
             state.keys.shape[0], device=state.keys.device, dtype=state.keys.dtype
@@ -237,6 +340,10 @@ class WorkspaceState:
     slots: torch.Tensor
     sources: torch.Tensor
     scores: torch.Tensor
+    all_candidate_logits: torch.Tensor
+    selected_indices: torch.Tensor
+    candidate_source_ids: torch.Tensor
+    candidate_valid_masks: torch.Tensor
 
 
 class Workspace(nn.Module):
@@ -266,6 +373,7 @@ class Workspace(nn.Module):
         self,
         candidates: Sequence[tuple[str, torch.Tensor]],
         masks: Sequence[torch.Tensor] | None = None,
+        temperature: float = 1.0,
     ) -> WorkspaceState:
         if not candidates:
             raise ValueError("workspace needs candidates")
@@ -300,13 +408,28 @@ class Workspace(nn.Module):
         if padding:
             all_values = F.pad(all_values, (0, 0, 0, padding))
             all_sources = F.pad(all_sources, (0, padding), value=-1)
+            all_valid = F.pad(all_valid, (0, padding), value=False)
             logits = F.pad(logits, (0, padding), value=-1e4)
         scores, indices = logits.topk(self.capacity, dim=1)
-        slots = torch.gather(
-            all_values, 1, indices.unsqueeze(-1).expand(-1, -1, self.value_dim)
-        )
+        if self.training:
+            soft = F.softmax(logits / temperature, dim=-1)
+            hard = F.one_hot(indices, logits.shape[-1]).to(all_values.dtype)
+            selection = hard + soft.unsqueeze(1) - soft.detach().unsqueeze(1)
+            slots = torch.einsum("bkn,bnd->bkd", selection, all_values)
+        else:
+            slots = torch.gather(
+                all_values, 1, indices.unsqueeze(-1).expand(-1, -1, self.value_dim)
+            )
         selected_sources = torch.gather(all_sources, 1, indices)
-        return WorkspaceState(slots, selected_sources, scores)
+        return WorkspaceState(
+            slots=slots,
+            sources=selected_sources,
+            scores=scores,
+            all_candidate_logits=logits,
+            selected_indices=indices,
+            candidate_source_ids=all_sources,
+            candidate_valid_masks=all_valid,
+        )
 
     def broadcast(self, state: WorkspaceState) -> torch.Tensor:
         return self.broadcast_projection(state.slots)
@@ -431,15 +554,24 @@ class EpisodicMemory:
         *,
         session_ids: Sequence[str],
         task_contexts: Sequence[str] | None = None,
-        breadth: int | None = None,
+        breadths: torch.Tensor | None = None,
         allow_cross_session: bool = False,
     ) -> RetrievalResult:
-        count = breadth or self.top_k
+        if breadths is None:
+            breadths = torch.full(
+                (keys.shape[0],), self.top_k, device=keys.device, dtype=torch.long
+            )
+        if breadths.shape != (keys.shape[0],):
+            raise ValueError("breadths must have shape [batch]")
+        if (breadths < 1).any():
+            raise ValueError("every retrieval breadth must be positive")
+        count = int(breadths.max().item())
         device = keys.device
         batch_values = []
         batch_events: list[list[EpisodicEvent]] = []
         batch_scores = []
         for row, query in enumerate(keys):
+            row_count = int(breadths[row].item())
             candidates = [
                 event
                 for event in self._events
@@ -464,7 +596,7 @@ class EpisodicMemory:
                 continue
             event_keys = torch.stack([event.key for event in candidates]).to(device)
             scores = event_keys @ F.normalize(query.float(), dim=0)
-            selected_count = min(count, len(candidates))
+            selected_count = min(row_count, len(candidates))
             selected_scores, selected = scores.topk(selected_count)
             selected_events = [candidates[int(index)] for index in selected]
             values = torch.stack([event.value for event in selected_events]).to(
@@ -631,6 +763,31 @@ class ModulatorController(nn.Module):
         self.network = nn.Sequential(
             nn.Linear(input_dim, hidden_dim), nn.SiLU(), nn.Linear(hidden_dim, 5)
         )
+        self.control_map = nn.Linear(5, 12)
+        mask = torch.zeros(12, 5)
+        mask[0:2, 0] = 1
+        mask[2:5, 1] = 1
+        mask[5:8, 2] = 1
+        mask[8:11, 3] = 1
+        mask[11, 4] = 1
+        self.register_buffer("differentiated_mask", mask)
+        self._initialize_control_map()
+
+    def _initialize_control_map(self) -> None:
+        with torch.no_grad():
+            self.control_map.weight.zero_()
+            self.control_map.bias.fill_(-2)
+            for row in (0, 1):
+                self.control_map.weight[row, 0] = 4
+            for row in (2, 3, 4):
+                self.control_map.weight[row, 1] = 4
+            self.control_map.weight[5, 2] = 4
+            self.control_map.weight[6, 2] = -4
+            self.control_map.bias[6] = 2
+            self.control_map.weight[7, 2] = 4
+            for row in (8, 9, 10):
+                self.control_map.weight[row, 3] = 4
+            self.control_map.weight[11, 4] = 4
 
     def forward(
         self, inputs: torch.Tensor, previous_overload: torch.Tensor
@@ -647,31 +804,34 @@ class ModulatorController(nn.Module):
         )
 
     def controls(self, signals: ModulatorSignals) -> ControlValues:
-        da, ne, ach, serotonin, overload = (
-            signals.da,
-            signals.ne,
-            signals.ach,
-            signals.serotonin,
-            signals.overload,
+        latent = torch.stack(
+            [
+                signals.da,
+                signals.ne,
+                signals.ach,
+                signals.serotonin,
+                signals.overload,
+            ],
+            dim=-1,
         )
-        if not self.differentiated:
-            mixed = torch.stack([da, ne, ach, serotonin, overload], dim=-1)
-            shared = mixed.mean(-1).sigmoid()
-            da = shared * 2 - 1
-            ne = ach = serotonin = overload = shared
+        weight = self.control_map.weight
+        if self.differentiated:
+            weight = weight * self.differentiated_mask
+        raw = F.linear(latent, weight, self.control_map.bias)
+        bounded = raw.sigmoid()
         return ControlValues(
-            fast_scale=da.abs(),
-            replay_priority=da.abs(),
-            router_temperature=1.5 - ne,
-            retrieval_breadth=(1 + (3 * ne).round()).long(),
-            strategy_reset=ne,
-            encode_weight=ach,
-            retrieve_weight=1 - ach,
-            memory_write=ach,
-            verify_threshold=0.75 - 0.5 * serotonin,
-            continue_bias=serotonin,
-            abstain_threshold=0.75 - 0.5 * serotonin,
-            conflict_pressure=overload,
+            fast_scale=bounded[:, 0],
+            replay_priority=bounded[:, 1],
+            router_temperature=1.5 - bounded[:, 2],
+            retrieval_breadth=(1 + (3 * bounded[:, 3]).round()).long(),
+            strategy_reset=bounded[:, 4],
+            encode_weight=bounded[:, 5],
+            retrieve_weight=bounded[:, 6],
+            memory_write=bounded[:, 7],
+            verify_threshold=0.25 + 0.5 * bounded[:, 8],
+            continue_bias=bounded[:, 9],
+            abstain_threshold=0.25 + 0.5 * bounded[:, 10],
+            conflict_pressure=bounded[:, 11],
         )
 
 

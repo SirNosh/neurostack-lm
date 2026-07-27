@@ -12,6 +12,7 @@ from .mechanisms import (
     WorkingMemory,
     Workspace,
 )
+from .data import Stage1RExample
 
 __all__ = [
     "CognitiveState",
@@ -24,5 +25,5 @@ __all__ = [
     "Verifier",
     "WorkingMemory",
     "Workspace",
+    "Stage1RExample",
 ]
-

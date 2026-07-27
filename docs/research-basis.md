@@ -19,7 +19,7 @@ No source code below is copied into this repository. The papers and author-maint
 - Foundational computational basis: O'Reilly & Frank, [Making Working Memory Work](https://doi.org/10.1162/089976606775093909) (2006). The PBWM model uses actively maintained PFC representations and learned BG-mediated update gates.
 - Related open code: [Emergent](https://github.com/emer/emergent), the successor framework from the O'Reilly lab for biologically based neural simulations. It is a framework reference, not a drop-in PBWM implementation for this project.
 - Pilot status: four zero-initialized GRU transformations were non-persistent.
-- Stage 1R status: four persistent 256-dimensional slots expose initialize, gated update, masked reset, detach, and cross-cycle state passing. Working memory has addressable keep/replace/merge/clear/protect operations.
+- Stage 1R status: four persistent 256-dimensional slots expose initialize, gated update, masked reset, detach, and cross-cycle state passing. Working memory has addressable keep/replace/merge/clear/protect operations; operation and address choices use straight-through Gumbel-softmax during training.
 - Missing: a faithful PBWM actor-critic/PVLV learning rule. The implementation is a functional abstraction, not a PBWM reproduction.
 
 ## Capacity-limited global workspace
@@ -27,23 +27,24 @@ No source code below is copied into this repository. The papers and author-maint
 - Algorithmic basis: Goyal et al., [Coordination Among Neural Modules Through a Shared Global Workspace](https://arxiv.org/abs/2103.01197) (2021), which introduces competition for a bandwidth-limited shared workspace among specialist modules.
 - Official code: no author-maintained repository was identified during the 2026-07-26 provenance search.
 - Pilot status: the four highest-ranked facts were averaged.
-- Stage 1R status: candidates compete from token state, PFC, working memory, episodic retrieval, specialists, verifier, and appraisal; exactly four selected slots are projected into latent tokens and prepended on the next Qwen cycle.
+- Stage 1R status: candidates compete from token state, PFC, working memory, episodic retrieval, specialists, verifier, and appraisal; exactly four selected slots are projected into latent tokens and prepended on the next Qwen cycle. Training uses straight-through soft admission gradients and exposes every candidate logit and label surface.
 - Missing: evidence that competition learns useful admission policies and that workspace lesions cause a targeted held-out deficit.
 
 ## Sparse specialist routing
 
 - Algorithmic basis: Shazeer et al., [Outrageously Large Neural Networks: The Sparsely-Gated Mixture-of-Experts Layer](https://arxiv.org/abs/1701.06538) (2017).
 - Reference code: [Tensor2Tensor](https://github.com/tensorflow/tensor2tensor), the Google research codebase containing the early sparse MoE implementation.
-- Current status: implemented in reduced form as four bottleneck experts with top-2 weighted routing.
+- Current status: implemented in reduced form as four bottleneck experts with top-2 weighted routing. Routing is computed from the contextual state after decoder layer 5 before the first adapter after layer 6.
 - Known failure: the pilot router collapsed onto one expert in early tasks. Load balancing must pass the preregistered 10–50% utilization bounds before this mechanism is accepted.
 - Stage 1R update: batch-level importance/assignment balancing is based on Shazeer et al.; logit stabilization follows [Switch Transformers](https://arxiv.org/abs/2101.03961) and its router z-loss. Weak family-to-expert labels are annealed to zero rather than retained as task routing.
+- Compute qualification: the current implementation evaluates all four experts and then selects two. The FLOP audit therefore reports all four expert matmuls; true sparse dispatch is not claimed.
 
 ## External working and episodic memory
 
 - External differentiable memory basis: Graves et al., [Neural Turing Machines](https://arxiv.org/abs/1410.5401) (2014) and the Differentiable Neural Computer; [official DeepMind DNC code](https://github.com/google-deepmind/dnc).
 - Fast episodic retrieval basis: Pritzel et al., [Neural Episodic Control](https://arxiv.org/abs/1703.01988) (2017).
 - Pilot status: an answer-ID nearest-neighbor cache; retrieval reduced mean accuracy.
-- Stage 1R status: session/task-scoped entries store latent event values, timestamps, goal/workspace state, outcome, confidence, and provenance. Retrieval returns latent tokens and never answer labels.
+- Stage 1R status: session/task-scoped entries store latent event values, timestamps, goal/workspace state, outcome, confidence, and provenance. Retrieval returns latent tokens and never answer labels. Breadth is selected independently per example, and evaluation writes are controlled by the learned memory-write probability rather than an oracle annotation.
 - Missing: trained recall@4, recency/outcome bias validation, FAISS scaling, eviction scoring, and the required misleading-memory causal test.
 
 ## Fast plastic weights and neuromodulated plasticity
@@ -61,6 +62,13 @@ No source code below is copied into this repository. The papers and author-maint
 - Official dataset/code: [THUNLP FewRel](https://github.com/thunlp/FewRel).
 - Stage 1R use: 5-way 1-shot and 5-shot episodes, with held-out relations and no evaluation-time gradient updates.
 - Current status: adapter not yet implemented; no FewRel result exists.
+
+## Supporting-fact and long-context data
+
+- bAbI basis: Weston et al., [Towards AI-Complete Question Answering: A Set of Prerequisite Toy Tasks](https://arxiv.org/abs/1502.05698), with the [official Meta release](https://research.facebook.com/downloads/babi/).
+- BABILong basis: Kuratov et al., [BABILong: Testing the Limits of LLMs with Long Context Reasoning-in-a-Haystack](https://arxiv.org/abs/2406.10149), with [official code](https://github.com/booydar/babilong) and the [official 5K training release](https://huggingface.co/datasets/RMT-team/babilong-train-5k-samples).
+- Stage 1R status: a common example schema, deterministic bAbI qa1-qa5 selection, exact supporting spans/IDs, and the official BABILong 4K qa1-qa5 2,000-per-task selection are implemented. Raw and formatted hashes are frozen in committed manifests.
+- Limitation: the BABILong training release exposes `input`, `question`, and `target`, but no support IDs; the adapter leaves support annotations empty rather than manufacturing labels.
 
 ## Predictive verification
 

@@ -9,6 +9,11 @@ import json
 
 import torch
 
+from src.stage1r.audit import (
+    expert_flop_audit,
+    hash_backbone_snapshot,
+    hash_module_parameters,
+)
 from src.stage1r.mechanisms import EpisodicMemory
 from src.stage1r.model import QWEN_REVISION, Stage1RNeuroStack
 
@@ -34,6 +39,8 @@ def main() -> None:
     torch.manual_seed(1729)
     tokenizer = AutoTokenizer.from_pretrained(MODEL_PATH, local_files_only=True)
     model = Stage1RNeuroStack.from_qwen(MODEL_PATH)
+    snapshot_sha256 = hash_backbone_snapshot(MODEL_PATH)
+    backbone_before = hash_module_parameters(model.backbone)
     prompts = [
         "Mary went to the kitchen. Where is Mary?",
         "John travelled to the office. Where is John?",
@@ -61,7 +68,8 @@ def main() -> None:
     state = model.apply_wake_feedback(
         wake.final,
         outcome=torch.tensor([1.0, -1.0], device="cuda"),
-        encode_mask=torch.tensor([True, True], device="cuda"),
+        encode_targets=torch.tensor([True, True], device="cuda"),
+        bootstrap_mode=True,
         episodic_memory=memory,
         session_ids=["smoke-a", "smoke-b"],
         task_contexts=["babi", "babi"],
@@ -77,9 +85,14 @@ def main() -> None:
         task_contexts=["babi", "babi"],
         cycles=1,
     )
+    backbone_after = hash_module_parameters(model.backbone)
 
     result = {
         "backbone_revision": QWEN_REVISION,
+        "backbone_snapshot_sha256": snapshot_sha256,
+        "backbone_parameter_sha256_before": backbone_before,
+        "backbone_parameter_sha256_after": backbone_after,
+        "backbone_hash_unchanged": backbone_before == backbone_after,
         "backbone_frozen": not any(
             parameter.requires_grad for parameter in model.backbone.parameters()
         ),
@@ -92,7 +105,16 @@ def main() -> None:
             state.fast_weights.pfc.matrix.abs().sum().float().cpu()
         ),
         "peak_vram_gb": torch.cuda.max_memory_allocated() / 2**30,
-        "status": "passed" if len(memory.events) == 2 else "failed",
+        "expert_flop_audit": expert_flop_audit(
+            batch_size=2,
+            tokens=tokens.input_ids.shape[1],
+            cycles=3,
+        ),
+        "status": (
+            "passed"
+            if len(memory.events) == 2 and backbone_before == backbone_after
+            else "failed"
+        ),
     }
     output = ROOT / "outputs" / "stage1r_smoke.json"
     output.write_text(json.dumps(result, indent=2), encoding="utf-8")
