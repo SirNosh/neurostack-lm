@@ -13,6 +13,7 @@ from .mechanisms import (
     Workspace,
 )
 from .data import Stage1RExample
+from .baselines import R0ParameterMatchedAdapter
 
 __all__ = [
     "CognitiveState",
@@ -26,4 +27,5 @@ __all__ = [
     "WorkingMemory",
     "Workspace",
     "Stage1RExample",
+    "R0ParameterMatchedAdapter",
 ]
