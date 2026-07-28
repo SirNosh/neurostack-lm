@@ -1,0 +1,14 @@
+{
+  "backbone": "Qwen/Qwen2.5-0.5B-Instruct",
+  "revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+  "adapter_layers_one_indexed": [6, 12, 18, 24],
+  "branches_per_location": 4,
+  "branches_executed_per_location": [4, 4, 4, 4],
+  "all_adapter_updates_zero": true,
+  "max_abs_logit_delta": 0.0,
+  "exact_logit_equality": true,
+  "backbone_hash_unchanged": true,
+  "dense_adapter_trainable_parameters": 3700736,
+  "peak_vram_gb": 0.9497427940368652,
+  "status": "passed"
+}
