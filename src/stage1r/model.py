@@ -27,6 +27,7 @@ from .mechanisms import (
     Workspace,
     WorkspaceState,
 )
+from .fewrel import FewRelEpisodeFastLearner
 
 
 QWEN_REVISION = "7ae557604adf67be50417f59c2c2f167def9a775"
@@ -91,6 +92,7 @@ class CycleOutput:
     working_write_key: torch.Tensor
     working_write_value: torch.Tensor
     retrieval_summary: torch.Tensor
+    support_logits: torch.Tensor
 
 
 @dataclass
@@ -124,6 +126,7 @@ class Stage1RNeuroStack(nn.Module):
             [RoutedAdapterBank(hidden_size) for _ in self.adapter_layer_indices]
         )
         self.token_projection = nn.Linear(hidden_size, 256)
+        self.support_scorer = nn.Linear(hidden_size, 1)
         self.token_key = nn.Linear(256, 64)
         self.episodic_key = nn.Linear(256, 256)
         self.retrieval_integration = nn.Linear(256, 256)
@@ -147,6 +150,7 @@ class Stage1RNeuroStack(nn.Module):
         self.verifier_candidate = nn.Linear(1, 256)
         self.appraisal_candidate = nn.Linear(6, 256)
         self.fast_weights = FastWeightBank(rank=8)
+        self.fewrel_fast_learner = FewRelEpisodeFastLearner()
         self._active_routing: RoutingResult | None = None
         self._active_routing_input: torch.Tensor | None = None
         self._routing_state: CognitiveState | None = None
@@ -353,7 +357,7 @@ class Stage1RNeuroStack(nn.Module):
             1, keepdim=True
         )
         logits = self.backbone.lm_head(hidden[:, -1])
-        return pooled, logits
+        return pooled, logits, hidden
 
     def forward(
         self,
@@ -376,9 +380,10 @@ class Stage1RNeuroStack(nn.Module):
             self._active_routing_input = None
             self._routing_state = state
             self._routing_lesions = lesions
-            pooled, token_logits = self._run_backbone(
+            pooled, token_logits, token_hidden = self._run_backbone(
                 input_ids, attention_mask, broadcast
             )
+            support_logits = self.support_scorer(token_hidden).squeeze(-1)
             if self._active_routing is None or self._active_routing_input is None:
                 raise RuntimeError("early-layer routing hook did not run")
             routing = self._active_routing
@@ -571,6 +576,7 @@ class Stage1RNeuroStack(nn.Module):
                     write_key,
                     write_value,
                     retrieval_summary,
+                    support_logits,
                 )
             )
         self._active_routing = None

@@ -40,6 +40,7 @@ def test_epbench_preserves_exact_chapter_retrieval_targets(tmp_path):
     assert examples[-1].retrieval_target_ids == [
         f"epbench:test:{tmp_path.name}:chapter-1"
     ]
+    assert examples[0].task_context == examples[-1].task_context == "epbench"
     assert examples[0].encode_target is True
     assert examples[-1].encode_target is False
 

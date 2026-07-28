@@ -36,7 +36,7 @@ The previous proxy remains preserved at Git tag `pilot-v0-negative`.
 
 ## Validation completed
 
-- 66 deterministic tests pass.
+- 67 deterministic tests pass.
 - Ten are integration/lifetime tests.
 - A real-Qwen token-level smoke lifetime passed:
 

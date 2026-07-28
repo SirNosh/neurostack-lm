@@ -81,6 +81,27 @@ def test_two_cycle_task_loss_reaches_memory_and_workspace_decisions():
     assert model.workspace.scorer[-1].weight.grad.abs().sum() > 0
 
 
+def test_token_support_scores_are_exposed_and_trainable():
+    model = make_model()
+    ids, mask = toy_inputs()
+    state = model.initialize_state(2, device="cpu", dtype=torch.float32)
+    output = model(
+        ids,
+        mask,
+        state,
+        EpisodicMemory(),
+        session_ids=["a", "b"],
+        task_contexts=["x", "x"],
+        cycles=1,
+    ).final
+    assert output.support_logits.shape == ids.shape
+    F.binary_cross_entropy_with_logits(
+        output.support_logits, torch.zeros_like(output.support_logits)
+    ).backward()
+    assert model.support_scorer.weight.grad is not None
+    assert model.support_scorer.weight.grad.abs().sum() > 0
+
+
 def test_state_persists_across_calls_and_reset_isolates_examples():
     model = make_model()
     ids, mask = toy_inputs()

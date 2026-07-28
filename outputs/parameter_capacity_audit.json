@@ -13,125 +13,125 @@
   "systems": {
     "R0": {
       "active_parameters_per_pass": [
-        502192707,
-        505407555,
-        505407555
+        502198086,
+        505412934,
+        505412934
       ],
-      "adapter_mechanism_flops": 25174560768,
-      "development_trainable_parameters": 11374787,
+      "adapter_mechanism_flops": 25191161856,
+      "development_trainable_parameters": 11380166,
       "feedback_tokens": 4,
       "maximum_passes": 3,
       "memory_bytes": 7168,
-      "parameter_match_error_fraction": 7.40288439938825e-05,
-      "sleep_trainable_parameters": 11374787,
+      "parameter_match_error_fraction": 4.569332503120766e-06,
+      "sleep_trainable_parameters": 11380166,
       "status": "measured",
       "total_backbone_flops": 1174138355712,
-      "total_parameters": 505407555,
+      "total_parameters": 505412934,
       "wake_mutable_state_bytes": 7168
     },
     "R1": {
       "active_parameters_per_pass": [
-        505407555,
-        505407555,
-        505407555
+        505412934,
+        505412934,
+        505412934
       ],
-      "adapter_mechanism_flops": 25370118144,
-      "development_trainable_parameters": 11374787,
+      "adapter_mechanism_flops": 25386848256,
+      "development_trainable_parameters": 11380166,
       "maximum_passes": 3,
       "memory_bytes": 58720256,
-      "parameter_match_error_fraction": 7.40288439938825e-05,
+      "parameter_match_error_fraction": 4.569332503120766e-06,
       "retrieval": "session-scoped top-4 from 8192 latent entries",
-      "sleep_trainable_parameters": 11374787,
+      "sleep_trainable_parameters": 11380166,
       "status": "measured",
       "total_backbone_flops": 1174138355712,
-      "total_parameters": 505407555,
+      "total_parameters": 505412934,
       "wake_mutable_state_bytes": 58720256
     },
     "R2": {
       "active_parameters_per_pass": [
-        505407547,
-        505407547,
-        505407547
+        505412926,
+        505412926,
+        505412926
       ],
-      "adapter_mechanism_flops": 25898299392,
-      "development_trainable_parameters": 11374779,
+      "adapter_mechanism_flops": 25915416576,
+      "development_trainable_parameters": 11380158,
       "maximum_passes": 3,
       "memory_bytes": 28672,
       "memory_tokens": 16,
-      "parameter_match_error_fraction": 7.332548205569836e-05,
-      "sleep_trainable_parameters": 11374779,
+      "parameter_match_error_fraction": 5.272306734370115e-06,
+      "sleep_trainable_parameters": 11380158,
       "status": "measured",
       "total_backbone_flops": 1206351003648,
-      "total_parameters": 505407547,
+      "total_parameters": 505412926,
       "wake_mutable_state_bytes": 28672
     },
     "R3": {
       "active_parameters_per_pass": [
-        505406713,
-        505406713,
-        505406713
+        505412986,
+        505412986,
+        505412986
       ],
-      "adapter_mechanism_flops": 11395495784,
+      "adapter_mechanism_flops": 11395533416,
       "controller": "generic five-dimensional",
-      "development_trainable_parameters": 11373945,
+      "development_trainable_parameters": 11380218,
       "maximum_passes": 3,
       "memory_bytes": 581690,
       "sleep_trainable_parameters": 4685056,
       "status": "measured",
       "total_backbone_flops": 1174138355712,
-      "total_parameters": 505406713,
+      "total_parameters": 505412986,
       "wake_mutable_state_bytes": 581690
     },
     "R3+aux": {
       "active_parameters_per_pass": [
-        505406713,
-        505406713,
-        505406713
+        505412986,
+        505412986,
+        505412986
       ],
-      "adapter_mechanism_flops": 11395495784,
+      "adapter_mechanism_flops": 11395533416,
       "controller": "generic five-dimensional",
-      "development_trainable_parameters": 11373945,
+      "development_trainable_parameters": 11380218,
       "difference_from_R3": "auxiliary supervision objective; no added parameters",
       "maximum_passes": 3,
       "memory_bytes": 581690,
       "sleep_trainable_parameters": 4685056,
       "status": "measured",
       "total_backbone_flops": 1174138355712,
-      "total_parameters": 505406713,
+      "total_parameters": 505412986,
       "wake_mutable_state_bytes": 581690
     },
     "R4": {
       "active_parameters_per_pass": [
-        505381625,
-        505381625,
-        505381625
+        505387898,
+        505387898,
+        505387898
       ],
-      "adapter_mechanism_flops": 11395495784,
+      "adapter_mechanism_flops": 11395533416,
       "controller": "differentiated; fast plasticity disabled",
-      "development_trainable_parameters": 11373945,
+      "development_trainable_parameters": 11380218,
       "maximum_passes": 3,
       "memory_bytes": 531514,
       "sleep_trainable_parameters": 4685056,
       "status": "measured",
       "total_backbone_flops": 1174138355712,
-      "total_parameters": 505406713,
+      "total_parameters": 505412986,
       "wake_mutable_state_bytes": 531514
     },
     "R5": {
       "active_parameters_per_pass": [
-        505406713,
-        505406713,
-        505406713
+        505412986,
+        505412986,
+        505412986
       ],
-      "adapter_mechanism_flops": 11395495784,
+      "adapter_mechanism_flops": 11395533416,
       "controller": "differentiated",
-      "development_trainable_parameters": 11373945,
+      "development_trainable_parameters": 11380218,
       "maximum_passes": 3,
       "memory_bytes": 581690,
       "sleep_trainable_parameters": 4685056,
       "status": "measured",
       "total_backbone_flops": 1174138355712,
-      "total_parameters": 505406713,
+      "total_parameters": 505412986,
       "wake_mutable_state_bytes": 581690
     }
   },
