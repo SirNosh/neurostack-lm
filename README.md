@@ -4,31 +4,26 @@ NeuroStack-LM tests whether a frozen pretrained language model benefits from an 
 
 ## Current result
 
-The repository currently contains a **bounded, one-seed bAbI pilot**, not the complete confirmatory Experiment 1.
+**Experiment 1 stopped at the Stage 1R foundational gate.** The complete
+three-seed R5 qualification wave ran on the frozen protocol, but support
+selection, episodic retrieval, and verification failed in all three seeds.
+The preregistered stop rule therefore prohibits launching attribution and
+conventional-baseline waves.
 
-That result is permanently preserved as Git tag `pilot-v0-negative`.
-Development has moved to [Stage 1R mechanism qualification](STAGE1R.md): the
-stateful mechanism core, conventional baselines, frozen benchmark manifests,
-and real-Qwen execution audits pass, but qualification training has not started.
+| Foundational metric | Required | Three-seed result |
+|---|---:|---:|
+| Supporting-fact AUPRC | >= 0.80 | 0.350 mean (0.342-0.355) |
+| Episodic recall@4 | >= 0.75 | 0.016 mean (0.011-0.026) |
+| Episodic answer gain | >= 3 points | -0.2 mean (-0.4-0.0) |
+| Verifier AUROC | >= 0.75 | 0.615 mean (0.600-0.627) |
+| Verifier macro-F1 | >= 0.65 | 0.577 mean (0.563-0.593) |
 
-The pilot failed the preregistered Stage 1 mechanism gate:
-
-- Supporting-fact AUPRC never approached the required 0.80.
-- Specialist routing collapsed onto one expert during early tasks.
-- The current verifier and differentiated modulator heads do not yet have the required negative/control supervision.
-
-Diagnostic results after the failed gate:
-
-| Metric | Result |
-|---|---:|
-| Mean NeuroStack pre-sleep slow-only accuracy | 19.8% |
-| Mean NeuroStack post-sleep slow-only accuracy | 37.8% |
-| Mean consolidation gain | +18.0 points |
-| Mean parameter-matched generic post-sleep accuracy | 33.0% |
-| Mean NeuroStack accuracy with online episodic retrieval | 18.4% |
-| Trainable parameter mismatch | 0.0016% |
-
-These numbers are useful for debugging, but the protocol prohibits treating them as positive evidence after the mechanism gate fails. See [REPORT.md](REPORT.md) for the full interpretation.
+Working-memory non-collapse passed in 3/3 seeds; router balance passed in 1/3
+and workspace utilization in 2/3. Backbone hashes remained unchanged. This is
+a valid negative result, not evidence against the broader hypothesis: the
+implemented R5 mechanism stack did not qualify for the downstream comparison.
+See [REPORT.md](REPORT.md) and the
+[machine-readable summary](outputs/qualification/r5_wave_summary.json).
 
 ## Reproduce
 

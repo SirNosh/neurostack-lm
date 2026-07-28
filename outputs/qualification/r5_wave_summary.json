@@ -1,0 +1,72 @@
+{
+  "system": "R5",
+  "seeds": [1729, 2718, 3141],
+  "stage1_foundational_pass": false,
+  "decision": "stop_after_stage1",
+  "reason": "Support selection, episodic retrieval, and verifier gates failed in all three preregistered seeds.",
+  "metrics": {
+    "support_selection_auprc": {
+      "threshold": 0.8,
+      "mean": 0.3500530849868446,
+      "min": 0.34165530809477856,
+      "max": 0.3549587734636554,
+      "values": [0.34165530809477856, 0.3535451734020999, 0.3549587734636554]
+    },
+    "episodic_recall_at_4": {
+      "threshold": 0.75,
+      "mean": 0.016049134066626364,
+      "min": 0.01070840197693575,
+      "max": 0.025684931506849314,
+      "values": [0.011754068716094032, 0.025684931506849314, 0.01070840197693575]
+    },
+    "episodic_answer_gain_points": {
+      "threshold": 3.0,
+      "mean": -0.2,
+      "min": -0.4,
+      "max": 0.0,
+      "values": [-0.4, 0.0, -0.2]
+    },
+    "verifier_auroc": {
+      "threshold": 0.75,
+      "mean": 0.6148191466666667,
+      "min": 0.59964964,
+      "max": 0.62746724,
+      "values": [0.62746724, 0.59964964, 0.61734056]
+    },
+    "verifier_macro_f1": {
+      "threshold": 0.65,
+      "mean": 0.5766637431211807,
+      "min": 0.5627546227983861,
+      "max": 0.5930412773496097,
+      "values": [0.5930412773496097, 0.5627546227983861, 0.5741953292155466]
+    },
+    "working_memory_write_fraction": {
+      "mean": 0.19997333333333334,
+      "min": 0.19992,
+      "max": 0.2,
+      "values": [0.2, 0.19992, 0.2]
+    },
+    "workspace_sources_used": {
+      "mean": 2.6666666666666665,
+      "min": 1,
+      "max": 4,
+      "values": [1, 4, 3]
+    },
+    "first_token_accuracy": {
+      "mean": 0.5701066666666667,
+      "min": 0.55872,
+      "max": 0.58432,
+      "values": [0.58432, 0.56728, 0.55872]
+    }
+  },
+  "gate_pass_counts": {
+    "support_selection": 0,
+    "router_balance": 1,
+    "episodic_retrieval": 0,
+    "verifier": 0,
+    "working_memory_noncollapsed": 3,
+    "workspace_utilized": 2
+  },
+  "backbone_hash_unchanged_all_seeds": true,
+  "downstream_waves_run": false
+}

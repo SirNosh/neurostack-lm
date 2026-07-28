@@ -1,0 +1,7 @@
+{
+  "checkpoint_bytes": 68356678,
+  "cpu_rss_gb": 3.1106185913085938,
+  "mean_optimizer_step_seconds": 2.251930995639041,
+  "p95_optimizer_step_seconds": 2.5803042999468744,
+  "peak_vram_gb": 4.491880416870117
+}

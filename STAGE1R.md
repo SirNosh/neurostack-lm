@@ -2,7 +2,9 @@
 
 ## Current status
 
-The mechanism core and execution smoke test are implemented. Qualification training has **not** started, and none of the eight acceptance gates is claimed as passed.
+The complete three-seed R5-first qualification wave is finished. It failed the
+foundational gate in all three seeds, so the preregistered protocol stopped
+before attribution and conventional-baseline waves.
 
 The previous proxy remains preserved at Git tag `pilot-v0-negative`.
 
@@ -83,20 +85,27 @@ three passes. It has no PFC, workspace, external episodic memory, or fast
 weights. Its zero-feedback condition keeps the same four-token prefix shape.
 Replay examples will be supplied by the common sleep runner.
 
-## Still required before qualification runs
+## Qualification result
 
-Timed R0/R2/R5 calibration now passes with exact checkpoint-resume equivalence,
-unchanged backbone hashes, and 2.51/2.64/2.68 GB peak CUDA allocation.
+Timed R0/R2/R5 calibration passed with exact checkpoint-resume equivalence,
+unchanged backbone hashes, and 2.51/2.64/2.68 GB peak CUDA allocation. The
+frozen R5 qualification then completed seeds 1729, 2718, and 3141:
 
-1. Extend the calibration runner with the full preregistered qualification
-   objectives, stream state, gate metrics, and lesion evaluations.
-2. The R5-first qualification wave and, only if its foundational gates pass,
-   the remaining preregistered systems.
-3. All eight acceptance gates passing across three seeds.
+| Metric | Required | Mean | Range |
+|---|---:|---:|---:|
+| Supporting-fact AUPRC | >= 0.80 | 0.350 | 0.342-0.355 |
+| Episodic recall@4 | >= 0.75 | 0.016 | 0.011-0.026 |
+| Episodic answer gain | >= 3 points | -0.2 | -0.4-0.0 |
+| Verifier AUROC | >= 0.75 | 0.615 | 0.600-0.627 |
+| Verifier macro-F1 | >= 0.65 | 0.577 | 0.563-0.593 |
 
-The `stage1r-prequalification-ready` tag is deliberately withheld until all
-remaining dataset manifests, R0/R1/R2 baseline implementations, and timed
-calibration artifacts are complete. No acceptance gate has been evaluated yet.
+Support selection, episodic retrieval, and verification failed in 3/3 seeds.
+Working-memory non-collapse passed in 3/3, router balance in 1/3, and workspace
+utilization in 2/3. The backbone hash remained unchanged in every seed.
+
+Decision: stop after Stage 1R. R3/R4 attribution and R0/R1/R2 baseline waves
+were not run because their interpretation depends on a qualified R5 system.
+Raw per-seed artifacts and the aggregate are under `outputs/qualification/`.
 
 ## Controller-supervision fairness contract
 

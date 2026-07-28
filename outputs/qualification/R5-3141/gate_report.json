@@ -1,0 +1,12 @@
+{
+  "all_foundational_gates_passed": false,
+  "gates": {
+    "episodic_retrieval": false,
+    "router_balance": false,
+    "support_selection": false,
+    "verifier": false,
+    "working_memory_noncollapsed": true,
+    "workspace_utilized": true
+  },
+  "stop_after_stage1": true
+}
