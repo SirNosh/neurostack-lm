@@ -1,0 +1,27 @@
+{
+  "counts": {
+    "dev": {
+      "babi": 2500,
+      "epbench": 696,
+      "prm800k": 10000
+    },
+    "train": {
+      "babi": 25000,
+      "clutrr": 2000,
+      "multisession_chat": 2395,
+      "prm800k": 100000
+    }
+  },
+  "dataset_manifest_sha256": {
+    "babi_stage1r.json": "e4a9788d8b90ef786df84e16821649164ed36d837b3e11969c8f92544c80de98",
+    "babilong_4k_stage1r.json": "26bdee684d97bf78191d87077278f704186be23461702ee1b7560184178d2e93",
+    "babilong_eval_stage1r.json": "e345fca6b14032ab8c419a7d94ee8a663c61e07d4b1cb4ba0a699547c094980a",
+    "clutrr_stage1r.json": "2c8bfc4d89e3cc27a33c96e1f1efa9be320ee87b4417d54199f9a4fe405c3884",
+    "epbench_stage1r.json": "2d9e1bf70c23d3321a44cc647862d79e10f60d4d6cf8d3ceeed6d09c64fe4e49",
+    "fewrel_stage1r.json": "30ab179b046bccf5119133b9735c964f2fd3e252ac64e530b5acb3802a459256",
+    "fewrel_stage1r_v2.json": "87b5f48e0588e1787ccab76b9fb89f5c294d0518c7ebc106047074e242b6e9a1",
+    "multisession_chat_stage1r.json": "d8c9273c522d3adaa93033f9cd76ee9a85ee6d044f1d7faaa65339fde701ab9c",
+    "prm800k_stage1r.json": "b4eedcde3c44ea27440024ac1f0fa4655c9a4aa97a0253adb623a9b0f9743bc5",
+    "trace_stage1r.json": "486dcff9facd3504de42e6ca30b1dad889053bfbaa212d38b70e64f9d24e77f3"
+  }
+}

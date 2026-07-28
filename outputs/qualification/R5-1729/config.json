@@ -1,0 +1,17 @@
+{
+  "effective_batch": 16,
+  "gradient_accumulation": 8,
+  "maximum_cycles": 3,
+  "maximum_sequence_length": 512,
+  "microbatch": 2,
+  "optimizer_steps": 4000,
+  "phase": "stage1_mechanism_bootstrap",
+  "sampling": {
+    "babi": 0.3,
+    "clutrr": 0.2,
+    "multisession_chat": 0.2,
+    "prm800k": 0.3
+  },
+  "seed": 1729,
+  "system": "R5"
+}

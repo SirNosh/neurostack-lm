@@ -1,0 +1,7 @@
+{
+  "backbone_revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+  "cuda": "12.4",
+  "gpu": "NVIDIA GeForce RTX 4070 SUPER",
+  "python": "3.11.0",
+  "torch": "2.6.0+cu124"
+}
