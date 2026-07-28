@@ -14,7 +14,7 @@ from src.experiment2.model import DenseFrozenBackbone
 from src.experiment2.babi import parse_babi
 from src.experiment2.support import FactScorer
 from src.experiment2.working_memory import BootstrapWorkingMemory
-from src.experiment2.tokenization import tokenize_example
+from src.experiment2.tokenization import fit_example_to_token_budget, tokenize_example
 
 
 def example(identifier: str, timestamp: int, reset: bool) -> Experiment2Example:
@@ -192,3 +192,16 @@ def test_character_fact_spans_map_to_exact_token_spans(tmp_path):
     assert tokenized.fact_token_spans == item.fact_spans
     start, end = tokenized.fact_token_spans[0]
     assert item.input_text[start:end] == "Mary went home."
+
+
+def test_token_budget_trimming_preserves_support_and_drops_oldest_distractors():
+    item = example("long", 0, True)
+    item.input_text = "old distractor\nsupport fact\nnew distractor\nQuestion?"
+    item.target_text = "answer"
+    item.fact_spans = [(0, 14), (15, 27), (28, 42)]
+    item.question_span = (43, 52)
+    item.support_fact_indices = [1]
+    fitted = fit_example_to_token_budget(item, CharacterTokenizer(), max_length=40)
+    assert "support fact" in fitted.input_text
+    assert "old distractor" not in fitted.input_text
+    assert fitted.support_fact_indices == [0]

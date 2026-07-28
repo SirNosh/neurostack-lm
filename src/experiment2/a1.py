@@ -85,7 +85,7 @@ class A1SupportWorkingMemoryModel(nn.Module):
         return self.dense_backbone(
             inputs_embeds=inputs,
             attention_mask=torch.cat([prefix_mask, attention_mask], dim=1),
-            output_hidden_states=True,
+            output_hidden_states=False,
             use_cache=False,
         )
 

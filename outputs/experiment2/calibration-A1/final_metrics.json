@@ -1,0 +1,14 @@
+{
+  "answer_exact_match": 0.0,
+  "backbone_hash_unchanged": true,
+  "fact_auprc": 0.21318374232605541,
+  "false_write_rate": 0.0,
+  "lesioned_answer_exact_match": 0.0,
+  "per_task_fact_auprc": {
+    "qa1": 0.21318374232605541
+  },
+  "predicted_write_fraction": 0.0,
+  "seed": 1729,
+  "support_recall": 0.25,
+  "working_memory_lesion_drop_points": 0.0
+}

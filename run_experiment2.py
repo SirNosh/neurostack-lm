@@ -22,6 +22,7 @@ def main() -> None:
     parser.add_argument("--resume", action="store_true")
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument("--dev-limit", type=int)
+    parser.add_argument("--stop-after-step", type=int)
     args = parser.parse_args()
     output = args.output_dir or ROOT / "outputs" / "experiment2" / f"A1-{args.seed}"
     runner = A1Runner(
@@ -34,7 +35,7 @@ def main() -> None:
     )
     if args.resume:
         runner.resume()
-    runner.train()
+    runner.train(stop_after_step=args.stop_after_step)
 
 
 if __name__ == "__main__":

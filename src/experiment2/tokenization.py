@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from dataclasses import replace
 
 import torch
 
@@ -56,6 +57,47 @@ def tokenize_example(
     return TokenizedExperiment2Example(
         example, input_ids, prompt_length, fact_spans, question_span
     )
+
+
+def fit_example_to_token_budget(
+    example: Experiment2Example, tokenizer, *, max_length: int = 512
+) -> Experiment2Example:
+    """Drop oldest distractors only; never remove support facts or the question."""
+    if not example.fact_spans:
+        return example
+    if (
+        len(tokenizer(example.input_text, add_special_tokens=False)["input_ids"])
+        + len(tokenizer(example.target_text, add_special_tokens=False)["input_ids"])
+        <= max_length
+    ):
+        return example
+    facts = [example.input_text[start:end] for start, end in example.fact_spans]
+    support = set(example.support_fact_indices)
+    kept = list(range(len(facts)))
+    question = example.input_text[example.question_span[0] :] if example.question_span else ""
+    while True:
+        context = "\n".join(facts[index] for index in kept)
+        text = f"{context}\n{question}" if context else question
+        length = len(tokenizer(text, add_special_tokens=False)["input_ids"]) + len(
+            tokenizer(example.target_text, add_special_tokens=False)["input_ids"]
+        )
+        if length <= max_length:
+            spans, offset = [], 0
+            for index in kept:
+                spans.append((offset, offset + len(facts[index])))
+                offset += len(facts[index]) + 1
+            remap = {old: new for new, old in enumerate(kept)}
+            return replace(
+                example,
+                input_text=text,
+                fact_spans=spans,
+                question_span=(len(context) + 1, len(text)),
+                support_fact_indices=[remap[index] for index in sorted(support)],
+            )
+        removable = next((index for index in kept if index not in support), None)
+        if removable is None:
+            raise ValueError("support facts and question exceed the token budget")
+        kept.remove(removable)
 
 
 def collate_tokenized(

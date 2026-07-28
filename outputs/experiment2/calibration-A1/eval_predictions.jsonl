@@ -1,0 +1,16 @@
+{"correct": false, "example_id": "experiment2:babi:qa1:story-296:q-5", "lesioned_correct": false, "lesioned_prediction": "the garden answer", "prediction": "john went to the", "target": "garden"}
+{"correct": false, "example_id": "experiment2:babi:qa1:story-823:q-4", "lesioned_correct": false, "lesioned_prediction": "the bathroom the", "prediction": "mary journeyed to", "target": "bedroom"}
+{"correct": false, "example_id": "experiment2:babi:qa1:story-1591:q-1", "lesioned_correct": false, "lesioned_prediction": "the garden answer", "prediction": "john went to the", "target": "office"}
+{"correct": false, "example_id": "experiment2:babi:qa1:story-241:q-2", "lesioned_correct": false, "lesioned_prediction": "the garden the", "prediction": "daniel daniel", "target": "hallway"}
+{"correct": false, "example_id": "experiment2:babi:qa1:story-757:q-5", "lesioned_correct": false, "lesioned_prediction": "the passage does not", "prediction": "mary went to the", "target": "bathroom"}
+{"correct": false, "example_id": "experiment2:babi:qa1:story-267:q-2", "lesioned_correct": false, "lesioned_prediction": "the passage does not", "prediction": "mary is a", "target": "kitchen"}
+{"correct": false, "example_id": "experiment2:babi:qa1:story-34:q-1", "lesioned_correct": false, "lesioned_prediction": "the garden answer", "prediction": "john is in the", "target": "bedroom"}
+{"correct": false, "example_id": "experiment2:babi:qa1:story-1126:q-1", "lesioned_correct": false, "lesioned_prediction": "the passage does not", "prediction": "the garden this", "target": "garden"}
+{"correct": false, "example_id": "experiment2:babi:qa1:story-1723:q-4", "lesioned_correct": false, "lesioned_prediction": "the garden answer", "prediction": "mary went to the", "target": "office"}
+{"correct": false, "example_id": "experiment2:babi:qa1:story-1480:q-1", "lesioned_correct": false, "lesioned_prediction": "the passage does not", "prediction": "in the bathroom", "target": "bathroom"}
+{"correct": false, "example_id": "experiment2:babi:qa1:story-1428:q-4", "lesioned_correct": false, "lesioned_prediction": "the garden answer", "prediction": "john went to the", "target": "office"}
+{"correct": false, "example_id": "experiment2:babi:qa1:story-654:q-4", "lesioned_correct": false, "lesioned_prediction": "the bathroom answer", "prediction": "daniel is in the", "target": "bathroom"}
+{"correct": false, "example_id": "experiment2:babi:qa1:story-431:q-4", "lesioned_correct": false, "lesioned_prediction": "the bedroom answer", "prediction": "the bedroom endoftext", "target": "bedroom"}
+{"correct": false, "example_id": "experiment2:babi:qa1:story-1224:q-2", "lesioned_correct": false, "lesioned_prediction": "the bedroom answer", "prediction": "mary went to the", "target": "hallway"}
+{"correct": false, "example_id": "experiment2:babi:qa1:story-1832:q-1", "lesioned_correct": false, "lesioned_prediction": "the answer is that", "prediction": "john travelled to the", "target": "bedroom"}
+{"correct": false, "example_id": "experiment2:babi:qa1:story-1344:q-1", "lesioned_correct": false, "lesioned_prediction": "the answer is that", "prediction": "john moved to the", "target": "kitchen"}

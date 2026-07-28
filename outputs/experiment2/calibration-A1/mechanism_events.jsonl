@@ -1,0 +1,1 @@
+{"checkpoint_score": 0.00037632640940028555, "dev": {"fact_auprc": 0.21318374232605541, "per_task_fact_auprc": {"qa1": 0.21318374232605541}, "support_recall": 0.25, "teacher_forced_exact_match": 0.0}, "step": 1}
