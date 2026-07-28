@@ -833,8 +833,7 @@ class Runner:
             row_events = [
                 event
                 for event in memory.events
-                if event.session_id == examples[row].session_id
-                and event.task_context == examples[row].task_context
+                if event.provenance.startswith(f"train:{row}:")
             ]
             if not row_events or not any(target_flags):
                 continue
