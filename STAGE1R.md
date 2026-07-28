@@ -85,11 +85,14 @@ Replay examples will be supplied by the common sleep runner.
 
 ## Still required before qualification runs
 
-1. Training/evaluation loops with example-level outputs and checkpoint recovery.
-2. Short calibration jobs to measure VRAM, throughput, and wall-clock duration.
-3. The R5-first qualification wave and, only if its foundational gates pass,
+Timed R0/R2/R5 calibration now passes with exact checkpoint-resume equivalence,
+unchanged backbone hashes, and 2.51/2.64/2.68 GB peak CUDA allocation.
+
+1. Extend the calibration runner with the full preregistered qualification
+   objectives, stream state, gate metrics, and lesion evaluations.
+2. The R5-first qualification wave and, only if its foundational gates pass,
    the remaining preregistered systems.
-4. All eight acceptance gates passing across three seeds.
+3. All eight acceptance gates passing across three seeds.
 
 The `stage1r-prequalification-ready` tag is deliberately withheld until all
 remaining dataset manifests, R0/R1/R2 baseline implementations, and timed

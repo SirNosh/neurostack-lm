@@ -1,0 +1,8 @@
+{
+  "development": 100,
+  "seed": 1729,
+  "sleep": 25,
+  "system": "R2",
+  "wake": 256,
+  "warmup": 20
+}

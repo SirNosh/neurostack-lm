@@ -1,0 +1,47 @@
+{
+  "schema_version": "stage1r-calibration-v1",
+  "seed": 1729,
+  "panel_examples": 1536,
+  "schedule": {
+    "warmup_steps": 20,
+    "measured_development_steps": 100,
+    "wake_examples": 256,
+    "sleep_steps": 25,
+    "evaluation_examples": 1536
+  },
+  "systems": {
+    "R0": {
+      "peak_vram_gb": 2.5114078521728516,
+      "mean_optimizer_step_seconds": 0.18044264199910687,
+      "mean_wake_seconds": 0.06794128984165582,
+      "mean_sleep_step_seconds": 0.17864492000080645,
+      "resume_exact": true,
+      "backbone_hash_unchanged": true,
+      "calibration_passed": true
+    },
+    "R2": {
+      "peak_vram_gb": 2.6379380226135254,
+      "mean_optimizer_step_seconds": 0.18391621101647615,
+      "mean_wake_seconds": 0.06630704062354198,
+      "mean_sleep_step_seconds": 0.17630500399507582,
+      "resume_exact": true,
+      "backbone_hash_unchanged": true,
+      "calibration_passed": true
+    },
+    "R5": {
+      "peak_vram_gb": 2.6831250190734863,
+      "mean_optimizer_step_seconds": 0.2545166239957325,
+      "mean_wake_seconds": 0.09837123633496958,
+      "mean_sleep_step_seconds": 0.23834822000935674,
+      "resume_exact": true,
+      "backbone_hash_unchanged": true,
+      "calibration_passed": true
+    }
+  },
+  "gate": {
+    "passed": true,
+    "physical_gpu_memory_gb": 12.0,
+    "minimum_r5_headroom_gb": 1.0,
+    "note": "First-token mixed-panel accuracy is a calibration diagnostic and is not an acceptance-gate result."
+  }
+}
