@@ -1,12 +1,12 @@
 {
-  "checkpoint_bytes": 41626628,
-  "cpu_rss_gb": 2.1915206909179688,
-  "estimated_4000_step_hours": 0.2827962488841472,
-  "evaluation_seconds": 159.25975919980556,
-  "mean_optimizer_step_seconds": 0.2545166239957325,
-  "mean_sleep_step_seconds": 0.23834822000935674,
-  "mean_wake_seconds": 0.09837123633496958,
-  "p95_optimizer_step_seconds": 0.3088469000067562,
-  "p95_wake_seconds": 0.12645499990321696,
-  "peak_vram_gb": 2.6831250190734863
+  "checkpoint_bytes": 41640738,
+  "cpu_rss_gb": 2.6128807067871094,
+  "estimated_4000_step_hours": 0.288771988867989,
+  "evaluation_seconds": 151.5390290999785,
+  "mean_optimizer_step_seconds": 0.2598947899811901,
+  "mean_sleep_step_seconds": 0.23359594400040806,
+  "mean_wake_seconds": 0.09370838086761069,
+  "p95_optimizer_step_seconds": 0.3216496999375522,
+  "p95_wake_seconds": 0.12014760007150471,
+  "peak_vram_gb": 2.687483310699463
 }

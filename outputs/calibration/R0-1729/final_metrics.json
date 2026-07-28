@@ -2,7 +2,7 @@
   "backbone_hash_unchanged": true,
   "examples": 1536,
   "finite": true,
-  "first_token_accuracy": 0.0078125,
+  "first_token_accuracy": 0.009114583333333334,
   "resume_exact": true,
   "seed": 1729,
   "system": "R0"

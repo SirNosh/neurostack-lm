@@ -11,28 +11,28 @@
   },
   "systems": {
     "R0": {
-      "peak_vram_gb": 2.5114078521728516,
-      "mean_optimizer_step_seconds": 0.18044264199910687,
-      "mean_wake_seconds": 0.06794128984165582,
-      "mean_sleep_step_seconds": 0.17864492000080645,
+      "peak_vram_gb": 2.511411666870117,
+      "mean_optimizer_step_seconds": 0.17494942501187324,
+      "mean_wake_seconds": 0.06663993711481453,
+      "mean_sleep_step_seconds": 0.17856011198833585,
       "resume_exact": true,
       "backbone_hash_unchanged": true,
       "calibration_passed": true
     },
     "R2": {
-      "peak_vram_gb": 2.6379380226135254,
-      "mean_optimizer_step_seconds": 0.18391621101647615,
-      "mean_wake_seconds": 0.06630704062354198,
-      "mean_sleep_step_seconds": 0.17630500399507582,
+      "peak_vram_gb": 2.637941837310791,
+      "mean_optimizer_step_seconds": 0.18825499600498005,
+      "mean_wake_seconds": 0.07052168047812302,
+      "mean_sleep_step_seconds": 0.19179313600063325,
       "resume_exact": true,
       "backbone_hash_unchanged": true,
       "calibration_passed": true
     },
     "R5": {
-      "peak_vram_gb": 2.6831250190734863,
-      "mean_optimizer_step_seconds": 0.2545166239957325,
-      "mean_wake_seconds": 0.09837123633496958,
-      "mean_sleep_step_seconds": 0.23834822000935674,
+      "peak_vram_gb": 2.687483310699463,
+      "mean_optimizer_step_seconds": 0.2598947899811901,
+      "mean_wake_seconds": 0.09370838086761069,
+      "mean_sleep_step_seconds": 0.23359594400040806,
       "resume_exact": true,
       "backbone_hash_unchanged": true,
       "calibration_passed": true
