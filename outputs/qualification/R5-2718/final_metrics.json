@@ -1,0 +1,44 @@
+{
+  "backbone_hash_unchanged": true,
+  "episodic_answer_accuracy": 0.0,
+  "episodic_answer_gain_points": 0.0,
+  "episodic_events": 196,
+  "episodic_recall_at_4": 0.025684931506849314,
+  "first_token_accuracy": 0.56728,
+  "no_memory_answer_accuracy": 0.0,
+  "router_by_family": {
+    "babi": [
+      0.25029315959215165,
+      0.24997393720149994,
+      0.4998844958543777,
+      4.5942260086212626e-05
+    ],
+    "prm800k": [
+      0.24098156278133392,
+      0.24746027808487414,
+      0.23932284654080868,
+      0.27234710235595705
+    ]
+  },
+  "router_expert_mass": [
+    0.24284388214349747,
+    0.2479630099081993,
+    0.2914351764035225,
+    0.2178868703367829
+  ],
+  "seed": 2718,
+  "stage1_foundational_pass": false,
+  "support_selection_auprc": 0.3535451734020999,
+  "support_selection_per_task_auprc": {
+    "qa1": 0.3348609970572213,
+    "qa2": 0.3263484975382664,
+    "qa3": 0.20210396571699862,
+    "qa4": 0.5070924923750364,
+    "qa5": 0.40568432489504963
+  },
+  "system": "R5",
+  "verifier_auroc": 0.59964964,
+  "verifier_macro_f1": 0.5627546227983861,
+  "working_memory_write_fraction": 0.19992,
+  "workspace_sources_used": 4
+}
