@@ -33,6 +33,7 @@ class BaselineOutput:
     pass_summaries: list[torch.Tensor]
     feedback_tokens: list[torch.Tensor]
     backbone_passes: int
+    retrieval_indices: list[list[int]] | None = None
 
 
 class R0ParameterMatchedAdapter(nn.Module):
@@ -227,3 +228,203 @@ class R0ParameterMatchedAdapter(nn.Module):
         self.eval()
         for parameter in self.parameters():
             parameter.requires_grad_(False)
+
+
+class R1OrdinaryRAG(R0ParameterMatchedAdapter):
+    """Parameter-matched generic adapters plus session-scoped ordinary RAG."""
+
+    def __init__(
+        self,
+        backbone: nn.Module,
+        *,
+        target_trainable_parameters: int,
+        hidden_size: int = 896,
+        adapter_layer_indices: Sequence[int] = ADAPTER_LAYER_INDICES,
+        capacity: int = 8192,
+        top_k: int = 4,
+    ) -> None:
+        if capacity != 8192 or top_k != 4:
+            raise ValueError("R1 is frozen at 8192 entries and top-4 retrieval")
+        super().__init__(
+            backbone,
+            target_trainable_parameters=target_trainable_parameters,
+            hidden_size=hidden_size,
+            adapter_layer_indices=adapter_layer_indices,
+        )
+        self.capacity = capacity
+        self.top_k = top_k
+        self._keys: dict[str, list[torch.Tensor]] = {}
+        self._values: dict[str, list[torch.Tensor]] = {}
+
+    def reset(self, session_id: str | None = None) -> None:
+        if session_id is None:
+            self._keys.clear()
+            self._values.clear()
+        else:
+            self._keys.pop(session_id, None)
+            self._values.pop(session_id, None)
+
+    def _retrieve(
+        self, query: torch.Tensor, session_ids: Sequence[str]
+    ) -> tuple[list[torch.Tensor], list[list[int]]]:
+        retrieved = []
+        all_indices = []
+        for row, session_id in enumerate(session_ids):
+            keys = self._keys.get(session_id, [])
+            values = self._values.get(session_id, [])
+            if not keys:
+                retrieved.append(query.new_zeros((0, self.hidden_size)))
+                all_indices.append([])
+                continue
+            key_tensor = torch.stack(keys).to(query)
+            scores = F.cosine_similarity(query[row : row + 1], key_tensor, dim=-1)
+            indices = scores.topk(min(self.top_k, len(keys))).indices.tolist()
+            retrieved.append(torch.stack([values[index] for index in indices]).to(query))
+            all_indices.append(indices)
+        return retrieved, all_indices
+
+    @torch.no_grad()
+    def _write(
+        self, summaries: torch.Tensor, session_ids: Sequence[str]
+    ) -> None:
+        for row, session_id in enumerate(session_ids):
+            keys = self._keys.setdefault(session_id, [])
+            values = self._values.setdefault(session_id, [])
+            value = summaries[row].detach().float().cpu()
+            keys.append(value)
+            values.append(value)
+            if len(keys) > self.capacity:
+                del keys[0]
+                del values[0]
+
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        *,
+        session_ids: Sequence[str],
+        passes: int = 1,
+        write: bool = True,
+    ) -> BaselineOutput:
+        if len(session_ids) != input_ids.shape[0]:
+            raise ValueError("one R1 session ID is required per batch row")
+        if not 1 <= passes <= 3:
+            raise ValueError("R1 permits one to three backbone passes")
+        original = self.backbone.model.embed_tokens(input_ids)
+        query_mask = attention_mask.to(original.dtype).unsqueeze(-1)
+        query = (original * query_mask).sum(1) / query_mask.sum(1).clamp_min(1)
+        retrieved, retrieval_indices = self._retrieve(query, session_ids)
+        max_retrieved = max((len(items) for items in retrieved), default=0)
+        if max_retrieved:
+            prefix = original.new_zeros(
+                input_ids.shape[0], max_retrieved, self.hidden_size
+            )
+            prefix_mask = attention_mask.new_zeros(
+                input_ids.shape[0], max_retrieved
+            )
+            for row, items in enumerate(retrieved):
+                prefix[row, : len(items)] = items
+                prefix_mask[row, : len(items)] = 1
+            embeddings = torch.cat((prefix, original), dim=1)
+            mask = torch.cat((prefix_mask, attention_mask), dim=1)
+        else:
+            embeddings, mask = original, attention_mask
+        logits: list[torch.Tensor] = []
+        summaries: list[torch.Tensor] = []
+        feedback_tokens: list[torch.Tensor] = []
+        for pass_index in range(passes):
+            hidden = self.backbone.model(
+                inputs_embeds=embeddings,
+                attention_mask=mask,
+                use_cache=False,
+                return_dict=True,
+            ).last_hidden_state
+            logits.append(self.backbone.lm_head(hidden[:, -1]))
+            float_mask = mask.to(hidden.dtype).unsqueeze(-1)
+            summaries.append(
+                (hidden * float_mask).sum(1) / float_mask.sum(1).clamp_min(1)
+            )
+            if pass_index + 1 < passes:
+                feedback = self.feedback_projection(summaries[-1]).view(
+                    input_ids.shape[0], self.feedback_token_count, self.hidden_size
+                )
+                feedback_tokens.append(feedback)
+                feedback_mask = attention_mask.new_ones(
+                    input_ids.shape[0], self.feedback_token_count
+                )
+                embeddings = torch.cat((feedback, embeddings), dim=1)
+                mask = torch.cat((feedback_mask, mask), dim=1)
+        if write:
+            self._write(summaries[-1], session_ids)
+        return BaselineOutput(
+            logits[-1], logits, summaries, feedback_tokens, passes, retrieval_indices
+        )
+
+
+class R2RecurrentMemoryTokens(R0ParameterMatchedAdapter):
+    """Parameter-matched recurrent baseline with exactly 16 memory tokens."""
+
+    def __init__(
+        self,
+        backbone: nn.Module,
+        *,
+        target_trainable_parameters: int,
+        hidden_size: int = 896,
+        adapter_layer_indices: Sequence[int] = ADAPTER_LAYER_INDICES,
+        memory_token_count: int = 16,
+    ) -> None:
+        if memory_token_count != 16:
+            raise ValueError("R2 is frozen at exactly 16 memory tokens")
+        memory_parameters = memory_token_count * hidden_size
+        super().__init__(
+            backbone,
+            target_trainable_parameters=target_trainable_parameters - memory_parameters,
+            hidden_size=hidden_size,
+            adapter_layer_indices=adapter_layer_indices,
+        )
+        self.memory_token_count = memory_token_count
+        self.memory_tokens = nn.Parameter(
+            torch.empty(memory_token_count, hidden_size)
+        )
+        nn.init.normal_(self.memory_tokens, std=0.02)
+        self.parameter_match_error = abs(
+            self.trainable_parameter_count - target_trainable_parameters
+        ) / max(1, target_trainable_parameters)
+        if self.parameter_match_error > 0.02:
+            raise ValueError("R2 trainable parameters are outside the +/-2% envelope")
+
+    def forward(
+        self,
+        input_ids: torch.Tensor,
+        attention_mask: torch.Tensor,
+        *,
+        passes: int = 1,
+    ) -> BaselineOutput:
+        if not 1 <= passes <= 3:
+            raise ValueError("R2 permits one to three backbone passes")
+        original = self.backbone.model.embed_tokens(input_ids)
+        memory = self.memory_tokens.unsqueeze(0).expand(input_ids.shape[0], -1, -1)
+        prefix_mask = attention_mask.new_ones(
+            input_ids.shape[0], self.memory_token_count
+        )
+        mask = torch.cat((prefix_mask, attention_mask), dim=1)
+        logits: list[torch.Tensor] = []
+        summaries: list[torch.Tensor] = []
+        feedback: list[torch.Tensor] = []
+        for pass_index in range(passes):
+            embeddings = torch.cat((memory, original), dim=1)
+            hidden = self.backbone.model(
+                inputs_embeds=embeddings,
+                attention_mask=mask,
+                use_cache=False,
+                return_dict=True,
+            ).last_hidden_state
+            logits.append(self.backbone.lm_head(hidden[:, -1]))
+            float_mask = mask.to(hidden.dtype).unsqueeze(-1)
+            summaries.append(
+                (hidden * float_mask).sum(1) / float_mask.sum(1).clamp_min(1)
+            )
+            if pass_index + 1 < passes:
+                memory = hidden[:, : self.memory_token_count]
+                feedback.append(memory)
+        return BaselineOutput(logits[-1], logits, summaries, feedback, passes)

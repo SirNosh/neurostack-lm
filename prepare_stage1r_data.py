@@ -5,13 +5,20 @@ import json
 from pathlib import Path
 
 from src.stage1r.babi import babi_stage1r_splits
-from src.stage1r.babilong import babilong_stage1r_training_split
+from src.stage1r.babilong import (
+    babilong_stage1r_evaluation_splits,
+    babilong_stage1r_training_split,
+)
+from src.stage1r.clutrr import clutrr_stage1r_splits
 from src.stage1r.data import build_manifest
+from src.stage1r.epbench import epbench_stage1r_splits
 from src.stage1r.fewrel import (
     fewrel_stage1r_splits,
     fewrel_stage1r_v2_splits,
 )
 from src.stage1r.prm800k import prm800k_stage1r_splits
+from src.stage1r.multisession_chat import msc_stage1r_splits
+from src.stage1r.trace import trace_stage1r_splits
 
 
 def main() -> None:
@@ -34,6 +41,23 @@ def main() -> None:
     )
     parser.add_argument(
         "--fewrel-dir", type=Path, default=Path("data/raw/fewrel/data")
+    )
+    parser.add_argument("--epbench-dir", type=Path, default=Path("data/raw/epbench-data"))
+    parser.add_argument(
+        "--msc-dir", type=Path, default=Path("data/raw/multi_session_chat")
+    )
+    parser.add_argument(
+        "--clutrr-dir", type=Path, default=Path("data/raw/clutrr-db9b8f04")
+    )
+    parser.add_argument(
+        "--trace-dir",
+        type=Path,
+        default=Path(
+            "data/raw/trace-data/TRACE-Benchmark/LLM-CL-Benchmark_500"
+        ),
+    )
+    parser.add_argument(
+        "--babilong-eval-dir", type=Path, default=Path("data/raw/babilong-eval")
     )
     args = parser.parse_args()
     splits, raw_files = babi_stage1r_splits(args.babi_dir)
@@ -181,6 +205,84 @@ def main() -> None:
             encoding="utf-8",
         )
         print(json.dumps(v2_manifest["counts"], sort_keys=True))
+
+    remaining = [
+        (
+            "epbench_stage1r.json",
+            args.epbench_dir,
+            lambda: epbench_stage1r_splits(args.epbench_dir),
+            "https://github.com/ahstat/episodic-memory-benchmark",
+            "892b22af097d4389d4f1b9cd47b5c51fdacd9bef",
+            (
+                "Use Claude books at 10K/100K/1M tokens as train/dev/test. "
+                "Retain every book event and deterministically select up to 500 "
+                "questions per book; exact relevant chapter IDs are retrieval targets."
+            ),
+        ),
+        (
+            "multisession_chat_stage1r.json",
+            args.msc_dir,
+            lambda: msc_stage1r_splits(args.msc_dir),
+            "https://huggingface.co/datasets/nayohan/multi_session_chat",
+            "78b67491c43823fc169cab827ab3f82805e0235b",
+            (
+                "Within each native split, order conversation IDs by seeded SHA-256 "
+                "and select 100. Preserve all their sessions and turns in temporal "
+                "order with memory reset only at the start of a conversation."
+            ),
+        ),
+        (
+            "clutrr_stage1r.json",
+            args.clutrr_dir,
+            lambda: clutrr_stage1r_splits(args.clutrr_dir),
+            "https://github.com/facebookresearch/clutrr",
+            "d045fae289d3746503677ceed7631c999202501e",
+            (
+                "Train on 2,000 seeded examples from relation depths 2-4; use up "
+                "to 500 each at depths 5-7 for dev and depths 8-10 for extrapolation test."
+            ),
+        ),
+        (
+            "trace_stage1r.json",
+            args.trace_dir,
+            lambda: trace_stage1r_splits(args.trace_dir),
+            "https://github.com/BeyonderXX/TRACE",
+            "462e39f616134f4f819efeb3baea8638c03c7db4",
+            (
+                "Use the official 500-example release and first four published tasks "
+                "C-STANCE, FOMC, MeetingBank, Py150. Preserve task order and carry "
+                "state across blocks; boundary labels are metadata absent from prompts."
+            ),
+        ),
+        (
+            "babilong_eval_stage1r.json",
+            args.babilong_eval_dir,
+            lambda: babilong_stage1r_evaluation_splits(args.babilong_eval_dir),
+            "https://huggingface.co/datasets/RMT-team/babilong",
+            "ee0d588794c7ac098062ee0d247c733d62e94fe2",
+            (
+                "Freeze all 100 official examples for qa1-qa5 at 4K, 8K, and 16K "
+                "as development cells and 32K as the extrapolation test cell."
+            ),
+        ),
+    ]
+    for filename, directory, loader, url, revision, procedure in remaining:
+        if not directory.exists():
+            continue
+        dataset_splits, dataset_files = loader()
+        dataset_manifest = build_manifest(
+            dataset_splits,
+            source_url=url,
+            source_revision=revision,
+            raw_files=dataset_files,
+            split_procedure=procedure,
+        )
+        destination = args.output.with_name(filename)
+        destination.write_text(
+            json.dumps(dataset_manifest, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+        print(filename, json.dumps(dataset_manifest["counts"], sort_keys=True))
 
 
 if __name__ == "__main__":

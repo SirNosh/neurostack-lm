@@ -37,3 +37,9 @@
 - Expanded the preregistered contract to seven systems by adding R3+aux, producing exactly 21 system/seed entries. R1 and R2 remain explicitly unavailable until implemented; capacity reports must not fabricate their measurements.
 - Added a standardized parameter/capacity audit and an R5 sleep-capacity-matched narrower R0 ordinary-replay control. CPU validation passes 59 tests before artifact generation and real-Qwen measurement.
 - The real-Qwen iterative R0 audit passed after waiting for and reserving the next free GPU window. Successive pass logits differed by max-absolute 17.25 and 13.625; the learned-feedback versus zero-feedback final-logit delta was 14.25. Parameter mismatch remained 0.0074%, the backbone hash was unchanged, and peak CUDA allocation was 0.960 GB.
+
+## 2026-07-28
+
+- User authorized the remaining CPU, RAM, disk, and GPU runs without a resource cap. The append-only shared-resource ledger remains authoritative for coordination: implementation work was claimed under `neurostack-lm`, and GPU use will receive its own just-in-time claim and release.
+- Acquired and pinned the official EPBench, CLUTRR, TRACE, Multi-Session Chat, and BABILong sources needed by the preregistered protocol. Decision: build bounded deterministic manifests from these sources and preserve their native split/session/task boundaries; do not expand the experiment with new tasks or mechanisms.
+- The implementation order remains deliberately narrow: freeze missing adapters, implement R1/R2, add one recoverable runner, calibrate R0/R2/R5, then run the R5-first qualification wave. A failed foundational gate will be reported as a scientific result rather than concealed by extra tuning.

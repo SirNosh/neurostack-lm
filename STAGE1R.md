@@ -25,16 +25,18 @@ The previous proxy remains preserved at Git tag `pilot-v0-negative`.
 - Lesion switches and wake/sleep parameter permissions.
 - Per-example retrieval breadth and model-controlled evaluation-time episodic writes.
 - Honest dense-expert FLOP accounting.
-- Common `Stage1RExample` schema and frozen bAbI/BABILong/PRM800K/FewRel manifests.
+- Common `Stage1RExample` schema and frozen manifests for bAbI, BABILong,
+  PRM800K, FewRel, EPBench, Multi-Session Chat, CLUTRR, and TRACE.
 - FewRel v2 with deterministic 48/16/16 relation partitions, episode-local
   A-E labels, support-label fast updates, and no evaluation gradients.
 - A 21-run machine-readable matrix covering R0-R5 plus R3+aux.
+- Parameter-matched R0, ordinary top-4 RAG R1, and 16-token recurrent-memory R2.
 - A real-Qwen parameter/capacity audit with an R5 sleep-capacity-matched
-  ordinary-replay R0 control; R1/R2 are explicitly unavailable.
+  ordinary-replay R0 control and measured R1/R2 capacity.
 
 ## Validation completed
 
-- 59 deterministic tests pass.
+- 66 deterministic tests pass.
 - Ten are integration/lifetime tests.
 - A real-Qwen token-level smoke lifetime passed:
 
@@ -83,12 +85,11 @@ Replay examples will be supplied by the common sleep runner.
 
 ## Still required before qualification runs
 
-1. Deterministic adapters/manifests for EPBench, Multi-Session Chat, CLUTRR, and the four TRACE blocks. bAbI, BABILong training, PRM800K, and FewRel are complete; BABILong evaluation manifests remain to be frozen.
-2. The R1 and R2 conventional baseline implementations and parameter/FLOP matching. R0 is implemented and audited.
-3. Training/evaluation loops with example-level outputs and checkpoint recovery.
-4. Short calibration jobs to measure VRAM, throughput, and wall-clock duration.
-5. The full 21-run matrix after resource scheduling.
-6. All eight acceptance gates passing across three seeds.
+1. Training/evaluation loops with example-level outputs and checkpoint recovery.
+2. Short calibration jobs to measure VRAM, throughput, and wall-clock duration.
+3. The R5-first qualification wave and, only if its foundational gates pass,
+   the remaining preregistered systems.
+4. All eight acceptance gates passing across three seeds.
 
 The `stage1r-prequalification-ready` tag is deliberately withheld until all
 remaining dataset manifests, R0/R1/R2 baseline implementations, and timed

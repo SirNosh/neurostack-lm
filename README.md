@@ -6,7 +6,10 @@ NeuroStack-LM tests whether a frozen pretrained language model benefits from an 
 
 The repository currently contains a **bounded, one-seed bAbI pilot**, not the complete confirmatory Experiment 1.
 
-That result is permanently preserved as Git tag `pilot-v0-negative`. Development has moved to [Stage 1R mechanism qualification](STAGE1R.md): the stateful mechanism core and real-Qwen execution smoke test now pass, but dataset qualification and the 18-run matrix have not started.
+That result is permanently preserved as Git tag `pilot-v0-negative`.
+Development has moved to [Stage 1R mechanism qualification](STAGE1R.md): the
+stateful mechanism core, conventional baselines, frozen benchmark manifests,
+and real-Qwen execution audits pass, but qualification training has not started.
 
 The pilot failed the preregistered Stage 1 mechanism gate:
 

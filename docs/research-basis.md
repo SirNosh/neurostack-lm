@@ -14,6 +14,12 @@ No source code below is copied into this repository. The papers and author-maint
 - Current status: implemented for the pilot as a completely frozen feature extractor at revision `7ae557604adf67be50417f59c2c2f167def9a775`.
 - Limitation: the pilot trains against cached final hidden states rather than inserting specialist adapters at Qwen layers 6, 12, 18, and 24.
 
+## Conventional memory baselines
+
+- R1 basis: Lewis et al., [Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks](https://arxiv.org/abs/2005.11401) (2020), with the original implementation released through [Hugging Face Transformers](https://github.com/huggingface/transformers/tree/main/src/transformers/models/rag). Stage 1R implements the deliberately ordinary control required by the protocol: session-scoped cosine retrieval over at most 8,192 detached latent entries, top-4 content insertion, and no learned write gate, workspace, or fast plasticity.
+- R2 basis: Bulatov, Kuratov & Burtsev, [Recurrent Memory Transformer](https://arxiv.org/abs/2207.06881) (NeurIPS 2022), with [author-maintained code](https://github.com/booydar/recurrent-memory-transformer). Stage 1R prepends exactly 16 memory tokens, recurs their output representations across at most three complete frozen-backbone passes, and has no external store.
+- Both controls use the same frozen Qwen revision, token path, insertion layers, and trainable-parameter envelope as R5. They are reduced controls, not reproductions of every training detail in the source papers.
+
 ## PFC-like persistent state and basal-ganglia-like working-memory gates
 
 - Foundational computational basis: O'Reilly & Frank, [Making Working Memory Work](https://doi.org/10.1162/089976606775093909) (2006). The PBWM model uses actively maintained PFC representations and learned BG-mediated update gates.
@@ -71,6 +77,13 @@ No source code below is copied into this repository. The papers and author-maint
 - BABILong basis: Kuratov et al., [BABILong: Testing the Limits of LLMs with Long Context Reasoning-in-a-Haystack](https://arxiv.org/abs/2406.10149), with [official code](https://github.com/booydar/babilong) and the [official 5K training release](https://huggingface.co/datasets/RMT-team/babilong-train-5k-samples).
 - Stage 1R status: a common example schema, deterministic bAbI qa1-qa5 selection, exact supporting spans/IDs, and the official BABILong 4K qa1-qa5 2,000-per-task selection are implemented. Raw and formatted hashes are frozen in committed manifests.
 - Limitation: the BABILong training release exposes `input`, `question`, and `target`, but no support IDs; the adapter leaves support annotations empty rather than manufacturing labels.
+
+## Remaining memory, reasoning, and continual-learning benchmarks
+
+- EPBench basis: He et al., [Episodic Memories Generation and Evaluation Benchmark for Large Language Models](https://openreview.net/forum?id=6OKsdO7BgO) (ICLR 2025), with [official code](https://github.com/ahstat/episodic-memory-benchmark) and the authors' Figshare data release. Stage 1R uses the Claude 10K/100K/1M books as train/dev/test, retains all events, and preserves exact answer-chapter IDs as retrieval targets. The downloaded supplemental archive contains answer outputs rather than a second book style, so no unseen-style claim is made.
+- Multi-Session Chat basis: Xu et al., [Beyond Goldfish Memory: Long-Term Open-Domain Conversation](https://aclanthology.org/2022.acl-long.356/) (ACL 2022). The pinned public dataset mirror preserves native splits; Stage 1R groups all sessions for a conversation under one memory scope and resets only between conversations.
+- CLUTRR basis: Sinha et al., [CLUTRR: A Diagnostic Benchmark for Inductive Reasoning from Text](https://arxiv.org/abs/1908.06177) (EMNLP 2019), with [official generator/data code](https://github.com/facebookresearch/clutrr). Stage 1R trains at relation depths 2–4, develops at 5–7, and tests extrapolation at 8–10.
+- TRACE basis: Wang et al., [TRACE: A Comprehensive Benchmark for Continual Learning in Large Language Models](https://arxiv.org/abs/2310.06762) (2023), with [official code and data scripts](https://github.com/BeyonderXX/TRACE). Stage 1R uses the official 500-example release for C-STANCE, FOMC, MeetingBank, and Py150 in published order. State persists across blocks; task-boundary labels are evaluation metadata and are absent from prompts.
 
 ## Predictive verification
 

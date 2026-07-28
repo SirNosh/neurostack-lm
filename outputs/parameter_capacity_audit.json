@@ -30,30 +30,40 @@
       "wake_mutable_state_bytes": 7168
     },
     "R1": {
-      "active_parameters_per_pass": null,
-      "adapter_mechanism_flops": null,
-      "development_trainable_parameters": null,
-      "maximum_passes": null,
-      "memory_bytes": null,
-      "reason": "ordinary-RAG baseline is not implemented; no measurements invented",
-      "sleep_trainable_parameters": null,
-      "status": "unavailable",
-      "total_backbone_flops": null,
-      "total_parameters": null,
-      "wake_mutable_state_bytes": null
+      "active_parameters_per_pass": [
+        505407555,
+        505407555,
+        505407555
+      ],
+      "adapter_mechanism_flops": 25370118144,
+      "development_trainable_parameters": 11374787,
+      "maximum_passes": 3,
+      "memory_bytes": 58720256,
+      "parameter_match_error_fraction": 7.40288439938825e-05,
+      "retrieval": "session-scoped top-4 from 8192 latent entries",
+      "sleep_trainable_parameters": 11374787,
+      "status": "measured",
+      "total_backbone_flops": 1174138355712,
+      "total_parameters": 505407555,
+      "wake_mutable_state_bytes": 58720256
     },
     "R2": {
-      "active_parameters_per_pass": null,
-      "adapter_mechanism_flops": null,
-      "development_trainable_parameters": null,
-      "maximum_passes": null,
-      "memory_bytes": null,
-      "reason": "recurrent-memory-token baseline is not implemented; no measurements invented",
-      "sleep_trainable_parameters": null,
-      "status": "unavailable",
-      "total_backbone_flops": null,
-      "total_parameters": null,
-      "wake_mutable_state_bytes": null
+      "active_parameters_per_pass": [
+        505407547,
+        505407547,
+        505407547
+      ],
+      "adapter_mechanism_flops": 25898299392,
+      "development_trainable_parameters": 11374779,
+      "maximum_passes": 3,
+      "memory_bytes": 28672,
+      "memory_tokens": 16,
+      "parameter_match_error_fraction": 7.332548205569836e-05,
+      "sleep_trainable_parameters": 11374779,
+      "status": "measured",
+      "total_backbone_flops": 1206351003648,
+      "total_parameters": 505407547,
+      "wake_mutable_state_bytes": 28672
     },
     "R3": {
       "active_parameters_per_pass": [

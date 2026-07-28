@@ -2,7 +2,11 @@ import pytest
 import torch
 import torch.nn.functional as F
 
-from src.stage1r.baselines import R0ParameterMatchedAdapter
+from src.stage1r.baselines import (
+    R0ParameterMatchedAdapter,
+    R1OrdinaryRAG,
+    R2RecurrentMemoryTokens,
+)
 from src.stage1r.model import Stage1RNeuroStack
 from stage1r_helpers import ToyCausalLM, toy_inputs
 
@@ -91,3 +95,32 @@ def test_r0_feedback_changes_iterative_result():
     )
     assert all(token.abs().sum() > 0 for token in iterative.feedback_tokens)
     assert all(token.abs().sum() == 0 for token in zero_feedback.feedback_tokens)
+
+
+def test_r1_is_session_scoped_top4_ordinary_rag():
+    _, target = make_models()
+    r1 = R1OrdinaryRAG(
+        ToyCausalLM(), target_trainable_parameters=target, hidden_size=32
+    )
+    ids, mask = toy_inputs()
+    first = r1(ids, mask, session_ids=["a", "b"])
+    second = r1(ids, mask, session_ids=["a", "new"], write=False)
+    assert first.retrieval_indices == [[], []]
+    assert second.retrieval_indices == [[0], []]
+    assert r1.capacity == 8192
+    assert r1.top_k == 4
+    assert abs(r1.trainable_parameter_count - target) / target <= 0.02
+
+
+def test_r2_uses_sixteen_recurrent_tokens_without_external_store():
+    _, target = make_models()
+    r2 = R2RecurrentMemoryTokens(
+        ToyCausalLM(), target_trainable_parameters=target, hidden_size=32
+    )
+    ids, mask = toy_inputs()
+    output = r2(ids, mask, passes=3)
+    assert r2.memory_tokens.shape == (16, 32)
+    assert len(output.feedback_tokens) == 2
+    assert output.feedback_tokens[0].shape == (2, 16, 32)
+    assert not hasattr(r2, "_keys")
+    assert abs(r2.trainable_parameter_count - target) / target <= 0.02

@@ -11,7 +11,11 @@ from src.stage1r.audit import (
     qwen_backbone_flops,
     tensor_payload_bytes,
 )
-from src.stage1r.baselines import R0ParameterMatchedAdapter
+from src.stage1r.baselines import (
+    R0ParameterMatchedAdapter,
+    R1OrdinaryRAG,
+    R2RecurrentMemoryTokens,
+)
 from src.stage1r.model import QWEN_REVISION, Stage1RNeuroStack
 
 
@@ -105,31 +109,12 @@ def main() -> None:
         "memory_bytes": state_bytes + episodic_bytes,
         "maximum_passes": 3,
     }
-    unavailable_metrics = {
-        "total_parameters": None,
-        "development_trainable_parameters": None,
-        "sleep_trainable_parameters": None,
-        "wake_mutable_state_bytes": None,
-        "active_parameters_per_pass": None,
-        "total_backbone_flops": None,
-        "adapter_mechanism_flops": None,
-        "memory_bytes": None,
-        "maximum_passes": None,
-    }
     r4_state_bytes = state_bytes + episodic_bytes - (
         8 * (256 + 1280 + 256 + 64 + 256 + 256 + 512 + 256) * 2
     )
     systems = {
-        "R1": {
-            "status": "unavailable",
-            "reason": "ordinary-RAG baseline is not implemented; no measurements invented",
-            **unavailable_metrics,
-        },
-        "R2": {
-            "status": "unavailable",
-            "reason": "recurrent-memory-token baseline is not implemented; no measurements invented",
-            **unavailable_metrics,
-        },
+        "R1": {},
+        "R2": {},
         "R3": {
             "status": "measured",
             **neuro_common,
@@ -194,6 +179,71 @@ def main() -> None:
         "feedback_tokens": 4,
     }
     del r0
+    gc.collect()
+
+    r1 = R1OrdinaryRAG.from_qwen(
+        MODEL_PATH,
+        target_trainable_parameters=development_parameters,
+        device="cpu",
+    )
+    r1_parameters = parameter_count(r1)
+    rag_bytes = r1.capacity * 2 * config["hidden_size"] * 4
+    systems["R1"] = {
+        "status": "measured",
+        "total_parameters": r1_parameters,
+        "development_trainable_parameters": r1.trainable_parameter_count,
+        "sleep_trainable_parameters": r1.trainable_parameter_count,
+        "wake_mutable_state_bytes": rag_bytes,
+        "active_parameters_per_pass": [r1_parameters] * 3,
+        "total_backbone_flops": backbone_flops,
+        "adapter_mechanism_flops": r1.mechanism_matmul_flops(
+            batch_size=1, tokens=516, passes=3
+        ),
+        "memory_bytes": rag_bytes,
+        "maximum_passes": 3,
+        "retrieval": "session-scoped top-4 from 8192 latent entries",
+        "parameter_match_error_fraction": abs(
+            r1.trainable_parameter_count - development_parameters
+        ) / development_parameters,
+    }
+    del r1
+    gc.collect()
+
+    r2 = R2RecurrentMemoryTokens.from_qwen(
+        MODEL_PATH,
+        target_trainable_parameters=development_parameters,
+        device="cpu",
+    )
+    r2_parameters = parameter_count(r2)
+    recurrent_bytes = 16 * config["hidden_size"] * 2
+    systems["R2"] = {
+        "status": "measured",
+        "total_parameters": r2_parameters,
+        "development_trainable_parameters": r2.trainable_parameter_count,
+        "sleep_trainable_parameters": r2.trainable_parameter_count,
+        "wake_mutable_state_bytes": recurrent_bytes,
+        "active_parameters_per_pass": [r2_parameters] * 3,
+        "total_backbone_flops": qwen_backbone_flops(
+            sequence_lengths=[528, 528, 528],
+            batch_size=1,
+            hidden_size=config["hidden_size"],
+            intermediate_size=config["intermediate_size"],
+            layers=config["num_hidden_layers"],
+            attention_heads=config["num_attention_heads"],
+            key_value_heads=config["num_key_value_heads"],
+            vocabulary_size=config["vocab_size"],
+        ),
+        "adapter_mechanism_flops": r2.adapter_matmul_flops(
+            batch_size=1, tokens=528, passes=3
+        ),
+        "memory_bytes": recurrent_bytes,
+        "maximum_passes": 3,
+        "memory_tokens": 16,
+        "parameter_match_error_fraction": abs(
+            r2.trainable_parameter_count - development_parameters
+        ) / development_parameters,
+    }
+    del r2
     gc.collect()
 
     sleep_r0 = R0ParameterMatchedAdapter.from_qwen(
