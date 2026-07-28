@@ -14,6 +14,7 @@ from src.experiment2.model import DenseFrozenBackbone
 from src.experiment2.babi import parse_babi
 from src.experiment2.support import FactScorer
 from src.experiment2.working_memory import BootstrapWorkingMemory
+from src.experiment2.tokenization import tokenize_example
 
 
 def example(identifier: str, timestamp: int, reset: bool) -> Experiment2Example:
@@ -168,3 +169,26 @@ def test_working_memory_targets_distinct_slots_and_lesion_changes_answer_logits(
     lesioned, _ = memory.read(state, question, lesion=True)
     decoder = torch.nn.Linear(8, 11, bias=False)
     assert not torch.equal(decoder(question + read), decoder(question + lesioned))
+
+
+class CharacterTokenizer:
+    def __call__(self, text, **kwargs):
+        result = {"input_ids": [ord(character) % 31 for character in text]}
+        if kwargs.get("return_offsets_mapping"):
+            result["offset_mapping"] = [
+                (index, index + 1) for index in range(len(text))
+            ]
+        return result
+
+
+def test_character_fact_spans_map_to_exact_token_spans(tmp_path):
+    source = tmp_path / "qa1_test_train.txt"
+    source.write_text(
+        "1 Mary went home.\n2 John stayed.\n3 Where is Mary?\thome\t1\n",
+        encoding="utf-8",
+    )
+    item = parse_babi(source)[0]
+    tokenized = tokenize_example(item, CharacterTokenizer())
+    assert tokenized.fact_token_spans == item.fact_spans
+    start, end = tokenized.fact_token_spans[0]
+    assert item.input_text[start:end] == "Mary went home."

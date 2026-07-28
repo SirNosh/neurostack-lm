@@ -25,6 +25,7 @@ class DenseFrozenBackbone(nn.Module):
     ) -> None:
         super().__init__()
         self.backbone = backbone
+        self.hidden_size = hidden_size
         self.adapter_layer_indices = tuple(adapter_layer_indices)
         for parameter in self.backbone.parameters():
             parameter.requires_grad_(False)

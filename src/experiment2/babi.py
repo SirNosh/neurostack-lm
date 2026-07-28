@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 import re
 
-from .data import Experiment2Example
+from .data import Experiment2Example, stable_order
 
 
 TASK = re.compile(r"qa(\d+)_")
@@ -48,3 +48,20 @@ def parse_babi(path: Path) -> list[Experiment2Example]:
             )
         )
     return output
+
+
+def experiment2_babi_splits(
+    directory: Path, *, seed: int = 1729
+) -> tuple[dict[str, list[Experiment2Example]], list[Path]]:
+    train, dev, test, raw_files = [], [], [], []
+    for task in range(1, 6):
+        train_path = next(directory.glob(f"qa{task}_*_train.txt"))
+        test_path = next(directory.glob(f"qa{task}_*_test.txt"))
+        raw_files.extend((train_path, test_path))
+        ordered = stable_order(parse_babi(train_path), seed)
+        if len(ordered) < 5500:
+            raise ValueError(f"{train_path.name} has fewer than 5,500 examples")
+        train.extend(ordered[:5000])
+        dev.extend(ordered[5000:5500])
+        test.extend(parse_babi(test_path))
+    return {"train": train, "dev": dev, "test": test}, raw_files

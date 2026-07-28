@@ -3,10 +3,11 @@ from __future__ import annotations
 from dataclasses import asdict, dataclass
 import hashlib
 import json
-from typing import Iterable
+from typing import Iterable, TypeVar
 
 
 ADAPTER_VERSION = "experiment2-v1"
+T = TypeVar("T")
 
 
 @dataclass
@@ -46,3 +47,12 @@ def validate_stream(examples: Iterable[Experiment2Example]) -> list[Experiment2E
             raise ValueError(f"timestamps must increase within {item.stream_id}")
         last[item.stream_id] = item.timestamp
     return ordered
+
+
+def stable_order(examples: Iterable[T], seed: int) -> list[T]:
+    return sorted(
+        examples,
+        key=lambda item: hashlib.sha256(
+            f"{seed}:{getattr(item, 'example_id')}".encode()
+        ).digest(),
+    )
