@@ -1,0 +1,30 @@
+{
+  "adapter_version": "experiment2-v1",
+  "counts": {
+    "dev": 2500,
+    "test": 5000,
+    "train": 25000
+  },
+  "raw_sha256": {
+    "qa1_single-supporting-fact_test.txt": "55acf66cef2f6d798e2aa1d056e1ec8f24e910ea9215b639450574321132959b",
+    "qa1_single-supporting-fact_train.txt": "749ea9f7c99070feb2d88c975a254417a0dcc8274add4435ae5ae24c7afc7e9d",
+    "qa2_two-supporting-facts_test.txt": "eff93fb9cd81ba02eb765772cf7cc269769ed44ec71cbbbc19cfb16ee5eba0f6",
+    "qa2_two-supporting-facts_train.txt": "d4074c0c5d54f70ce2f538056ce2b6ef6a313da336da4245f1a24f1298e37ef3",
+    "qa3_three-supporting-facts_test.txt": "17795c977100baf8188f386522ae301b62d6c1a13efc01b3aea781e588b4d57f",
+    "qa3_three-supporting-facts_train.txt": "d125e8d2987ef764d107bf9f23223bfd166400581c1ace418533b540fd19592f",
+    "qa4_two-arg-relations_test.txt": "07f0ca18ddeea9eed4ba6d59e162adcb0ce44815721114b3540d92825509331e",
+    "qa4_two-arg-relations_train.txt": "5d11b821d35234988ab907866aa7ce718e6b6d751acf63bdef52262afb59f12c",
+    "qa5_three-arg-relations_test.txt": "ec825c1c8a76e63a31f0d7a7763cd63740e98332fa9bdf246a19068949bd5f97",
+    "qa5_three-arg-relations_train.txt": "2506910935b701bac64fc8b1d7ff12bd8d0f47ceefca183454282bec784c12a5"
+  },
+  "selected_ids_sha256": {
+    "dev": "89de72f79d4c9faa4b489a3a3df789f5ac6927fd0a268bededb27cff3e6dca5a",
+    "test": "a03b95cd16a8690cb1567de85a3f31d42876bee7400751eae0faeaa995476784",
+    "train": "e1ebd979b8dcb594db0eae6d33365e9a2f59fcdb2dc623b1e6f6b7f6f8458535"
+  },
+  "support_preserving_trimmed_examples": {
+    "dev": 91,
+    "test": 184,
+    "train": 884
+  }
+}

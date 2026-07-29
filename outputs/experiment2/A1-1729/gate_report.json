@@ -1,0 +1,8 @@
+{
+  "noncollapsed_writes": true,
+  "per_task_fact_auprc": false,
+  "phase_passed": false,
+  "pooled_fact_auprc": false,
+  "support_recall": false,
+  "working_memory_utility": true
+}

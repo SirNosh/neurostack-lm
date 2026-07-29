@@ -1,0 +1,32 @@
+{
+  "conclusion": "foundational_negative",
+  "phase": "A1",
+  "seed_completed": 1729,
+  "seeds_not_launched": [
+    2718,
+    3141
+  ],
+  "stop_reason": "Seed 1729 failed mandatory pooled/per-task fact AUPRC and support-recall gates; an every-seed criterion is therefore impossible.",
+  "selected_checkpoint_step": 2500,
+  "optimizer_steps": 3500,
+  "metrics": {
+    "answer_exact_match": 0.8456,
+    "lesioned_answer_exact_match": 0.0484,
+    "working_memory_lesion_drop_points": 79.72,
+    "fact_auprc": 0.18184345985550632,
+    "support_recall": 0.5968000000000008,
+    "predicted_write_fraction": 0.020784854167137337,
+    "false_write_rate": 0.012666716340064079
+  },
+  "gates": {
+    "pooled_fact_auprc": false,
+    "per_task_fact_auprc": false,
+    "support_recall": false,
+    "working_memory_utility": true,
+    "noncollapsed_writes": true,
+    "phase_passed": false
+  },
+  "later_phases_launched": false,
+  "support_qualified_tag_created": false,
+  "experiment1_modified": false
+}
