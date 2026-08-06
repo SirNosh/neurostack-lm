@@ -1,0 +1,21 @@
+{
+  "answer_exact_match": 0.8456,
+  "backbone_hash_unchanged": true,
+  "fact_auprc": 0.18184345985550632,
+  "false_write_rate": 0.012666716340064079,
+  "lesioned_answer_exact_match": 0.0484,
+  "optimizer_steps": 3500,
+  "per_task_fact_auprc": {
+    "qa1": 0.2913653664848045,
+    "qa2": 0.25441259024807006,
+    "qa3": 0.17267333194549636,
+    "qa4": 0.8009445445958883,
+    "qa5": 0.4845399534224754
+  },
+  "predicted_write_fraction": 0.020784854167137337,
+  "seed": 1729,
+  "selected_checkpoint_step": 2500,
+  "stopped_early": true,
+  "support_recall": 0.5968000000000008,
+  "working_memory_lesion_drop_points": 79.72
+}

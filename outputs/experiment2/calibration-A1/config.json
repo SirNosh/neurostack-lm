@@ -1,0 +1,15 @@
+{
+  "adapter_lr": 5e-05,
+  "backbone_revision": "7ae557604adf67be50417f59c2c2f167def9a775",
+  "cycles": 2,
+  "dev_limit": 16,
+  "effective_batch": 16,
+  "gradient_accumulation": 8,
+  "head_lr": 0.0002,
+  "max_steps": 1,
+  "microbatch": 2,
+  "phase": "A1",
+  "scheduler": "cosine",
+  "seed": 1729,
+  "warmup": 200
+}

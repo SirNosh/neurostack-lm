@@ -1,0 +1,35 @@
+{
+  "phase": "A1",
+  "status": "passed",
+  "scientific_gate_claimed": false,
+  "real_qwen_accumulated_step": {
+    "microbatch": 2,
+    "gradient_accumulation": 8,
+    "effective_batch": 16,
+    "seconds": 3.762511699926108,
+    "peak_vram_gb": 5.70918083190918,
+    "trainable_parameters": 3589263,
+    "checkpoint_bytes": 27043118,
+    "backbone_hash_unchanged": true
+  },
+  "token_budget": {
+    "max_tokens": 512,
+    "rule": "remove oldest non-supporting facts only; retain every support fact and the complete question/answer",
+    "trimmed_examples": {
+      "train": 884,
+      "dev": 91,
+      "test": 184
+    }
+  },
+  "checkpoint_resume": {
+    "seed": 2718,
+    "max_steps": 2,
+    "interruption_after_step": 1,
+    "uninterrupted_final_step": 2,
+    "resumed_final_step": 2,
+    "model_max_abs_delta": 0.0,
+    "step2_metrics_equal": true,
+    "scheduler_equal": true,
+    "backbone_hash_equal": true
+  }
+}

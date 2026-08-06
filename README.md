@@ -25,6 +25,15 @@ implemented R5 mechanism stack did not qualify for the downstream comparison.
 See [REPORT.md](REPORT.md) and the
 [machine-readable summary](outputs/qualification/r5_wave_summary.json).
 
+**Experiment 2 also stopped at its first foundational gate.** Its dense
+four-branch core passed exact frozen-backbone identity tests, and A1 learned a
+causally useful working-memory path (84.56% answer EM, falling to 4.84% when
+lesioned). It did not qualify supporting-fact selection: pooled fact AUPRC was
+0.182 and support recall 0.597. Because A1 required every seed to pass, the
+first seed's failure triggered the registered stop before later seeds or
+mechanisms. See [EXPERIMENT2_REPORT.md](EXPERIMENT2_REPORT.md) and the
+[machine-readable stop record](outputs/experiment2/a1_foundational_stop.json).
+
 ## Reproduce
 
 The pilot expects Windows, an NVIDIA GPU, Python 3.11, the official bAbI archive under `data/raw`, and the fixed Qwen snapshot in the Hugging Face cache.
